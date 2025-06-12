@@ -118,3 +118,25 @@ select {
     border-radius: var(--radius-md);
     font-size: var(--text-size-base);
 }
+
+::selection {
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
+}
+
+::placeholder {
+    color: var(--color-gray-300);
+    opacity: 1;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--color-primary-500);
+}
+
+details > summary {
+    list-style: none;
+}
+details > summary::-webkit-details-marker {
+    display: none;
+}
