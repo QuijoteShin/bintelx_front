@@ -1,0 +1,30 @@
+/* src/bnx/components/action-toolbar/action-toolbar.css */
+
+.action-toolbar {
+    /* Mobile-first: Anchored to the bottom, full width */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px; /* Add some padding */
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Slight shadow for visual separation */
+    background-color: #f8f9fa; /* A light background color, can be easily overridden */
+    display: flex; /* Arrange buttons horizontally */
+    justify-content: space-around; /* Distribute buttons evenly */
+    z-index: 1000; /* Ensure it's above other content */
+}
+
+/* Desktop: Positioned in the lower right corner */
+@media (min-width: 768px) {
+    .action-toolbar {
+        position: sticky; /* Or fixed, depending on desired behavior with scrolling */
+        bottom: 20px;
+        right: 20px;
+        width: auto; /* Adjust width as needed, or let content define it */
+        border-radius: 8px; /* Optional: rounded corners for desktop */
+    }
+}
+
+.action-toolbar.is-hidden {
+    display: none;
+}
