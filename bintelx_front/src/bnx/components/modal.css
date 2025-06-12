@@ -28,6 +28,7 @@
     font-size: var(--text-size-lg);
     font-weight: var(--font-weight-semibold);
     margin: 0;
+    user-select: none;
 }
 
 .modal-close-button {
@@ -36,8 +37,9 @@
     font-size: 1.5rem;
     line-height: 1;
     cursor: pointer;
-    color: var(--color-gray-400);
+    color: var(--color-gray-700);
     padding: 0 var(--spacing-2);
+    user-select: none;
 }
 
 .modal-body {

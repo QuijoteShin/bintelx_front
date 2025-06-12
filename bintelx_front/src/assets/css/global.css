@@ -58,6 +58,21 @@
     --shadow-inner-profile: inset 0 2px 4px 0 hsla(0, 0%, 0%, .2); /*  */
     --shadow-card-lifted: 0 5px 15px 0 hsla(0, 0%, 0%, .15); /*  */
     --shadow-card-rich: 0 4px 6px hsla(0,0%,0%,.07), 0 5px 15px hsla(0,0%,0%,.1); /*  */
+
+
+    /* Details ( Collapsible Item ) */
+    --collapsible-item-accent-color: #007bff; /* Example: Bintelx Blue */
+    --collapsible-item-accent-color-hover: #0056b3; /* Darker blue for hover/focus */
+    --collapsible-item-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+    --collapsible-item-focus-shadow: 0 0 0 3px var(--collapsible-item-accent-color-hover); /* Focus ring shadow, increased spread */
+
+    --collapsible-item-marker-content-closed: '▶';
+    --collapsible-item-marker-content-open: '▼';
+    --collapsible-item-marker-color: var(--collapsible-item-accent-color);
+    --collapsible-item-marker-font-size: 0.8em;
+    --collapsible-item-marker-margin-right: 0.5em;
+
+    --collapsible-item-summary-padding: 0.5em 0.75em;
 }
 
 
@@ -90,9 +105,7 @@ body {
     margin: 0 0 var(--spacing-4) 0;
 }
 
-.button-primary {
-    background-color: var(--color-primary-500);
-    color: var(--color-white);
+button, .button {
     padding: var(--spacing-2) var(--spacing-4);
     border-radius: var(--radius-md);
     font-weight: var(--font-weight-medium);
@@ -102,6 +115,12 @@ body {
     border: none;
     cursor: pointer;
     transition: background-color 150ms;
+    user-select: none;
+}
+
+.button-primary {
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
 }
 
 .button-primary:hover {
