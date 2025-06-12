@@ -2,8 +2,10 @@
 export const config = {
     appName: 'Bintelx Clinical Agnostic Front',
     defaultLocale: 'es-CL',
+    defaultRoute: '/_dashboard/index',
+    appContainer: { loading: '<h2>Loading...</h2>' },
     api: {
-        baseUrl: 'https://api.localhost/v1',
+        baseUrl: '/api/mock',
         timeout: 15000
     },
 };

@@ -7,3 +7,7 @@ dist/
 .idea/
 
 DEV_LOG.md
+
+src/apps/dashboard/
+src/apps/users/
+src/apps/demo/

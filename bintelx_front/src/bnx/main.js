@@ -5,12 +5,9 @@ import '../assets/css/global.css';
 
 document.title = config.appName;
 // Initialize the application router
-initRouter();
-
 async function startApp() {
     console.log('Starting Bintelx Frontend Application...');
-    // document.title = config.appName; // Example of using config
-
+    // document.title = config.appName;
     // Load persistent layout components into their slots
     try {
         await Promise.all([
