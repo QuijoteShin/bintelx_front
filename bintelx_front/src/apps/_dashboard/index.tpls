@@ -1,0 +1,6 @@
+<!-- /src/apps/dashboard/index.tpls -->
+<div class="card">
+  <h1 class="card-title">Dashboard</h1>
+<p>Welcome to the Bintelx Frontend Framework.</p>
+<p>This is the main dashboard view, demonstrating the basic module loading and styling.</p>
+</div>

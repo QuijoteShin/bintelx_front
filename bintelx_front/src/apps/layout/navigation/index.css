@@ -1,0 +1,35 @@
+/* /src/apps/layout/navigation/index.css */
+
+.main-navigation {
+    display: flex;
+    align-items: center;
+}
+
+.nav-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: var(--spacing-2);
+}
+
+.nav-link {
+    display: block;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-primary-600);
+    transition: background-color 150ms, color 150ms;
+}
+
+.nav-link:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-primary-500);
+}
+
+/* leav room for anchor states handles via js */
+.nav-link.active {
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
+}
