@@ -15,13 +15,6 @@ export class Modal {
         }
         this.dialog = dialogElement;
         this.boundClose = this.close.bind(this);
-
-        // Close when clicking on the backdrop
-        this.dialog.addEventListener('click', (event) => {
-            if (event.target === this.dialog) {
-                this.close();
-            }
-        });
     }
 
     /**
