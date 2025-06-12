@@ -3,68 +3,69 @@ ENTERPRISE BOILERPLATE  UI WITH UX IN MIND
 
 This guide outlines a series of initial and iterative prompts to build your mobile-first Clinical Data Capture web application, keeping in mind the capabilities and interaction model of a design AI like Stitch or Canvas.
 
-## I. Overarching Guiding Principles (For You, the Prompter)
+# BINTEL-X FRONT
+## Enterprise Agnostic Front
 
-Before you start prompting the design AI, internalize these core principles derived from your requirements and the Stitch guide:
+This repository contains the front-end source code for the Bintel-X platform. It is a Single Page Application (SPA) built with pure JavaScript (Vanilla JS), HTML, and CSS, using Webpack as the module bundler. The architecture is designed to be modular and scalable, loading different "mini-applications" dynamically.
 
-1.  **One Major Change at a Time:** Each prompt should focus on a single, clear objective (e.g., define base layout, add a specific component, style one element type). Avoid bundling multiple distinct requests.
-2.  **Be Explicit and Specific:** Clearly state *what* you want and *how* it should look or behave. Use UI/UX keywords (e.g., "navigation bar," "data table," "input field").
-3.  **Mobile-First Always:** Continuously reinforce the mobile-first design philosophy in your prompts, especially when defining layouts or components.
-4.  **Native Priority:** Remind the AI to prioritize native HTML elements, especially for inputs, and to avoid unnecessary `<div>` wrappers.
-5.  **Iterate and Save:** After each successful prompt that yields a good result, consider it a checkpoint. If the AI has a "save" or "versioning" feature, use it. Mentally (or with screenshots), track your progress.
-6.  **Reference Existing Elements:** When modifying, be precise (e.g., "the primary button on the patient entry form," "the header of the main data table").
+## Key Features
 
-## II. Initial Sequence of Prompts for the Design AI
+* **Pure JavaScript:** No frameworks like React or Vue, for maximum performance control and a low application weight.
+* **Modular Architecture:** The code is organized into self-contained "apps" within `src/apps`, which facilitates maintenance and scalability.
+* **Hybrid Dynamic Routing:**
+* Routes can be explicitly defined in `routes.json` files for granular control (new system).
+* For backward compatibility, the router also supports routes based on the file structure convention (legacy system).
+* **Modern Packaging:** Use Webpack to package, transpile code with Babel, and manage assets such as CSS and HTML templates.
 
-This sequence aims to establish the foundational elements of your application.
+## Project Structure
 
-### Phase 1: Core Foundation & Global Styles
+It's very important to note that the source code and project configuration (such as `package.json` and `webpack.config.js`) are located within the `bintelx_front` subfolder.
 
-* **Prompt 1: Project Initialization & Core Technology**
-    ```
-    Initialize a new web application project for 'Clinical Data Capture.'
-    The application must be mobile-first.
-    The frontend technology will be [Choose one: 'Vanilla JavaScript using ES6+ features and template strings for rendering' OR 'SvelteKit'].
-    Tailwind CSS will be used for styling.
-    Explicitly AVOID React, Vue.js, and Angular.
-    ```
+**All npm commands must be run from within that folder.**
 
-* **Prompt 2: Base Typography & Color Palette Intent**
-    ```
-    Set a clean and highly readable default sans-serif font for the entire application.
-    For the color palette, aim for a professional, trustworthy, and accessible theme suitable for a clinical environment. Start with a predominantly neutral palette (e.g., whites, light grays) with a clear accent color for primary actions (e.g., a muted blue or green). Ensure high contrast for text and UI elements for accessibility.
-    ```
+```
+bintelx_front-main/
+└── bintelx_front/ <-- Enter this folder to work
+├── package.json
+├── webpack.config.js
+├── src/
+└── ...
+```
 
-* **Prompt 3: Native Input Styling Philosophy**
-    ```
+## Prerequisites
+
+* Node.js (latest LTS version recommended)
+* npm (installed automatically with Node.js)
+
+## Installation and Running
+
+1. Navigate to the main project folder: `cd bintelx_front`
+2. Install dependencies:
+```sh
+npm install
+```
+3. Start the development server:
+```sh
+npm start
+```
+The application will automatically open in your default browser.
+
+4. To build the application for production:
+```sh
+npm run build
+```
+This will generate the static files in the `dist/` folder inside `bintelx_front`.
+
+# **Native Input Styling Philosophy**
     Establish a global style for native HTML form inputs (<input>, <select>, <textarea>).
     The styling should be minimal, clean, and enhance usability.
-    IMPORTANT: Do NOT wrap these native input elements in extra <div>s or other custom elements for styling. Style the native elements directly as much as possible using Tailwind CSS.
-    ```
+    IMPORTANT: Do NOT wrap these native input elements in extra <div>s or other custom elements for styling. Style the native elements directly as much as possible using CSS.
 
-### Phase 2: Basic Structure & Navigation
 
-* **Prompt 4: Main Application Layout Shell (Mobile-First)**
-    ```
-    Design the basic application shell for mobile screens.
-    It should include a clear area for a page title/header, a main content area, and potentially a simple navigation element (e.g., a bottom navigation bar or a hamburger menu icon placeholder in the header for mobile).
-    The main content area is where different data views will be rendered.
-    ```
 
-* **Prompt 5: Client-Side Navigation & Data Loading Intent**
-    ```
-    The application will function as a Single Page Application (SPA).
-    Navigation between views must use the browser's History API (pushState, replaceState) and update the URI accordingly, without full page reloads.
-    Data for views will be fetched dynamically from JSON files. URIs for these JSON files should simulate real API endpoints (e.g., '/api/v1/studies/{studyId}/patients').
-    ```
 
 ### Phase 3: Key Data Display & Interaction Patterns
 
-* **Prompt 6: Default Table Styling for Data Lists**
-    ```
-    For displaying lists of data (e.g., patient lists, visit schedules), the primary method will be HTML <table> elements.
-    Define a default style for tables using Tailwind CSS. The style should be clean, with clear separation between rows and distinct headers. Ensure tables are responsive for mobile viewing (e.g., allowing horizontal scroll if necessary for wider tables on small screens, but prioritize a mobile-friendly column layout where feasible).
-    ```
 
 * **Prompt 7: Structure for Horizontally Grouped Content Blocks**
     ```
