@@ -127,8 +127,7 @@ button, .button {
     background-color: var(--color-primary-600);
 }
 
-input[type="text"],
-input[type="search"],
+input
 select {
     display: block;
     width: 100%;
