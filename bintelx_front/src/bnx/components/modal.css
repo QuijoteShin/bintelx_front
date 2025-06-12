@@ -1,0 +1,53 @@
+/* src/bnx/components/modal.css */
+
+.modal-dialog {
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card-rich);
+    min-width: 400px;
+    max-width: 90vw;
+}
+
+/* Estilo para el fondo oscuro (backdrop) */
+.modal-dialog::backdrop {
+    background-color: hsla(0, 0%, 0%, 0.5);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.modal-header {
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: var(--text-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin: 0;
+}
+
+.modal-close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--color-gray-400);
+    padding: 0 var(--spacing-2);
+}
+
+.modal-body {
+    padding: var(--spacing-6);
+}
+
+.modal-footer {
+    padding: var(--spacing-4);
+    border-top: 1px solid var(--color-gray-200);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+}
