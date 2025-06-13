@@ -12,8 +12,8 @@
 /* Estilo para el fondo oscuro (backdrop) */
 .modal-dialog::backdrop {
     background-color: hsla(0, 0%, 0%, 0.5);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: var(--blurred);
+    backdrop-filter: var(--blurred);
 }
 
 .modal-header {

@@ -4,6 +4,14 @@ import { config } from '../config.js';
 const routes = __ROUTES__;
 const appContainer = document.getElementById('app');
 
+
+async function DOMDefaults(container) {
+  const buttons = container.querySelectorAll('button:not([type])');
+  buttons.forEach(button => {
+    button.type = 'button';
+  });
+}
+
 /**
  * [NEW SYSTEM] Loads an application based on a route object from __ROUTES__.
  * @param {object} route - The route object from __ROUTES__.
@@ -32,6 +40,7 @@ async function loadApp(route, params = {}) {
 
     const renderedHtml = renderTemplate(template, { params });
     appContainer.innerHTML = renderedHtml;
+    DOMDefaults(appContainer);
 
     if (logic) {
       logic(appContainer, { params });
@@ -71,6 +80,7 @@ async function loadAppByConvention(path) {
 
   const renderedHtml = renderTemplate(template, {}); // No params in this system
   appContainer.innerHTML = renderedHtml;
+  DOMDefaults(appContainer);
 
   if (logic) {
     logic(appContainer, {});
