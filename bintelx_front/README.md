@@ -114,6 +114,103 @@ The framework relies on a dynamic component loader and an API mocking system to 
     -   If no mock is found for the endpoint, it returns `null`, and `api.js` proceeds to make the actual network request.
 -   This system allows for rapid frontend development and testing of different API response scenarios without depending on a live backend.
 
+---
+
+## `bnx-stepper` Web Component
+
+The `bnx-stepper` is a custom web component designed to create multi-step user flows or wizards. It dynamically loads content for each step and manages navigation between steps.
+
+### Purpose
+To provide a reusable and encapsulated way to guide users through a sequence of actions or information gathering stages.
+
+### Usage as Web Component
+Simply include the `<bnx-stepper>` tag in your HTML where you want the stepper to appear:
+```html
+<bnx-stepper id="myStepper"></bnx-stepper>
+```
+The component is then configured and controlled via JavaScript.
+
+### Configuration
+Steps are defined by setting the `steps` property on the `bnx-stepper` element. This property takes an array of step configuration objects.
+
+**Step Configuration Object Example:**
+```javascript
+const stepperElement = document.getElementById('myStepper');
+stepperElement.steps = [
+  {
+    id: 'uniqueStepId1', // Optional: A unique ID for the step
+    templatePath: 'path/to/step1.tpls', // Path to the HTML template for this step
+    scriptPath: 'path/to/step1.js',     // Path to the JavaScript module for this step's logic
+    // validate: (stepData) => { return true; } // Optional: A validation function directly in config
+  },
+  {
+    id: 'uniqueStepId2',
+    templatePath: 'path/to/step2.tpls',
+    scriptPath: 'path/to/step2.js'
+  }
+  // ... more steps
+];
+```
+* `id`: An optional unique identifier for the step. If not provided, the step's index is used internally.
+* `templatePath`: The URL to an HTML file that will be fetched and used as the content for this step. These paths should be relative to the web server root (e.g., `/src/apps/_auth/login/step1.tpls`). The `Stepper.js` component prepends a `/` if it's not there.
+* `scriptPath`: The URL to a JavaScript module (ESM) that controls the logic for this step. Path considerations are similar to `templatePath`.
+* `validate`: An optional function `(stepData) => boolean` that can be provided directly in the step configuration. If this exists, it's called before navigating to the next step (and before the step element's own `validate` function).
+
+### Step Structure
+*   **`templatePath`**: Points to an HTML file. Its content will be injected into the step's container.
+*   **`scriptPath`**: Points to a JavaScript ES module. This module must export a default function with the signature:
+    ```javascript
+    export default function(stepElement, stepData, updateStepDataCallback) {
+      // stepElement: The DOM element container for this step's template.
+      // stepData: Any data previously saved for this step.
+      // updateStepDataCallback: A function to call to save or update data for this step.
+      //                       Example: updateStepDataCallback({ fieldName: 'value' });
+
+      // Optionally, expose a validate method on the stepElement:
+      stepElement.validate = () => {
+        // Perform validation logic for this step.
+        // Return true if valid, false otherwise.
+        // This is called by the stepper when trying to navigate next.
+        return true;
+      };
+
+      // Optionally, expose other methods needed by the main flow orchestration script,
+      // for example, a submission handler for the final step:
+      // stepElement.submit = async (allStepperData) => { /* ... */ };
+    }
+    ```
+    The `stepElement.validate()` convention is the primary way for a step to indicate if it's valid to proceed. If both `stepConfig.validate` and `stepElement.validate` exist, `stepConfig.validate` is called first.
+
+### Events
+The `bnx-stepper` dispatches the following custom events on the stepper element itself:
+
+*   **`stepChange`**: Fired when the current step changes successfully (after content is loaded and transitions, if any, are complete).
+    *   `event.detail`: `{ currentStepIndex: number, stepId: string, previousStepIndex: number }`
+*   **`flowComplete`**: Fired when `next()` is called on the last step and validation (if any) passes.
+    *   `event.detail`: `{ data: object }` (where `data` is the object returned by `getData()`)
+*   **`flowCancel`**: Fired when `prev()` is called on the first step.
+    *   `event.detail`: `{ data: object }` (where `data` is the object returned by `getData()`)
+
+### Methods
+The following public methods can be called on a `bnx-stepper` element instance:
+
+*   **`next()`**: Attempts to navigate to the next step. Performs validation on the current step (both `stepConfig.validate` and `stepElement.validate()` if they exist). If on the last step, triggers the `flowComplete` event.
+*   **`prev()`**: Navigates to the previous step. If on the first step, triggers the `flowCancel` event.
+*   **`goTo(stepIdOrIndex: string | number)`**: Navigates to a specific step identified by its ID or index. This does not currently trigger validation on the outgoing step.
+*   **`getData()`**: Returns a deep copy of all data collected by the stepper, keyed by step ID (or index if ID is not provided).
+
+### Styling
+*   The `bnx-stepper` uses Shadow DOM for style encapsulation. Its internal structure and basic styles are defined in `stepper.tpls` (inline styles for host and container) and `stepper.css` (for individual steps and transitions).
+*   Step transitions (sliding effects) are CSS-based, utilizing classes like `slide-to-left`, `slide-from-right`, etc. These are defined in `stepper.css`.
+*   The component itself is a block-level element (`display: block`). Its dimensions can be controlled by external CSS.
+
+### Example
+A working example of the `bnx-stepper` is implemented for a two-step login flow. You can find this example in the `bintelx_front/src/apps/_auth/` directory, specifically:
+*   `two-step-login.tpls` (HTML structure hosting the stepper)
+*   `two-step-login.js` (Orchestration logic, defines steps and handles events)
+*   `login/step1.tpls`, `login/step1.js`, `login/step2.tpls`, `login/step2.js` (Individual step templates and scripts)
+    Make sure the paths provided in `templatePath` and `scriptPath` are correctly resolved by your development server (e.g., paths starting from the root like `/src/apps/...`).
+
 
 ---
 
@@ -144,3 +241,4 @@ This project is built as a Single-Page Application (SPA) Micro Service. With a m
 - **What it is:** The `router.js` module manages application navigation without full page reloads. It uses the browser's History API to dynamically change the URL and render the appropriate view, providing a seamless user experience.
 
 ---
+

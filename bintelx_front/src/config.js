@@ -9,6 +9,8 @@ export const config = {
         timeout: 15000
     },
     authAppPath: '_auth/login',
+    AUTH_APP_TEMPLATE_PATH: '_auth/login/index.tpls',
+    AUTH_APP_SCRIPT_PATH: '_auth/login/index.js',
     AUTH_TOKEN_NAME: 'bnxt',
     AUTH_LOGIN_ENDPOINT: '/_auth/login',
     AUTH_TOKEN_VALIDATE_ENDPOINT: '/_auth/validate',

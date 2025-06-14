@@ -2,7 +2,7 @@
 import { config } from '../config.js';
 import { api } from './api.js';
 import { devlog } from "./utils.js";
-import { loadComponent } from './loader.js';
+import { loadContentIntoElement  } from './loader.js';
 
 const MODE_IN = __MODE_IN__;
 let storedAppNode = null;
@@ -92,9 +92,17 @@ function showLoginOverlay() {
     formContainer.id = 'login-form-container';
     overlay.appendChild(formContainer);
     document.body.appendChild(overlay);
-    loadComponent(config.authAppPath, '#login-form-container', {
+    loadContentIntoElement (config.authAppPath, '#login-form-container', {
         onSuccess: handleSuccessfulLogin
     });
+    loadContentIntoElement(
+       {
+           templatePath: config.AUTH_APP_TEMPLATE_PATH,
+           scriptPath: config.AUTH_APP_SCRIPT_PATH
+       },
+       formContainer,
+       { onSuccess: handleSuccessfulLogin }
+    );
 }
 
 function stopSessionMonitor() {
