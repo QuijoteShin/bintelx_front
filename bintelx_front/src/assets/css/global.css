@@ -140,6 +140,11 @@ button, .button {
     background-color: var(--color-primary-600);
 }
 
+.text-error {
+    color: #ef4444 !important;
+    font-weight: var(--font-weight-medium);
+}
+
 input,
 textarea,
 select {
