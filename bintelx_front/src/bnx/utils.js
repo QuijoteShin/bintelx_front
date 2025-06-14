@@ -1,5 +1,8 @@
-// /src/bnx/utils.js
+// src/bnx/utils.js
+
 import { config } from '../config.js';
+const MODE_IN = __MODE_IN__;
+
 /**
  * A basic HTML sanitizer to prevent XSS.
  */
@@ -58,5 +61,25 @@ export function renderTemplate(templateString, data = {}) {
   } catch (e) {
     console.error("Error rendering template:", e);
     return "<p>Error: Could not render content.</p>";
+  }
+}
+
+/**
+ * Displays a message in the console only if the application is in development mode.
+ * This function does nothing in the production build.
+ * @param {any} message - The message or data to display in the console.
+ * @param {string} [mode='log'] - The console method to use ('log', 'warn', 'error', 'table', 'info', etc.).
+ */
+export function devlog(message, mode = 'log') {
+  if(MODE_IN === 'production') {
+    return;
+  }
+
+  if (typeof console[mode] === 'function') {
+    console[mode](message);
+  } else {
+    // Si el modo no es válido, usamos console.log como fallback.
+    console.log(`[devlog] Invalid mode '${mode}'. Falling back to 'log'.`);
+    console.log(message);
   }
 }

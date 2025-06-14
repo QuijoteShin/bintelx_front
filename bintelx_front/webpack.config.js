@@ -80,7 +80,8 @@ module.exports = (env, argv) => {
         template: './public/index.html',
       }),
       new webpack.DefinePlugin({
-        __ROUTES__: JSON.stringify(dynamicRoutes), // global __ROUTES__
+        __MODE_IN__: JSON.stringify(argv.mode),
+        __ROUTES__: JSON.stringify(dynamicRoutes),
       }),
     ],
     module: {
