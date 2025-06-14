@@ -1,5 +1,5 @@
-// /src/bnx/router.js
-import { renderTemplate } from './utils.js';
+// src/bnx/router.js
+import { renderTemplate, devlog } from './utils.js';
 import { config } from '../config.js';
 const routes = __ROUTES__;
 const appContainer = document.getElementById('app');
@@ -19,7 +19,7 @@ async function DOMDefaults(container) {
  */
 async function loadApp(route, params = {}) {
   if (!appContainer) {
-    console.error('Main application container #app not found.');
+    devlog('Main application container #app not found.', 'trace');
     return;
   }
 
@@ -46,7 +46,7 @@ async function loadApp(route, params = {}) {
       logic(appContainer, { params });
     }
   } catch (error) {
-    console.error(`Failed to load app: ${route.app}`, error);
+    devlog(`Failed to load app: ${route.app}`, error, 'trace');
     appContainer.innerHTML = '<h2>404 - Page Not Found</h2><p>Could not load the application module.</p>';
   }
 }
@@ -75,7 +75,7 @@ async function loadAppByConvention(path) {
     const tplModule = await import(`../apps/${modulePath}.tpls`);
     template = tplModule.default;
   } catch (e) {
-    console.warn(`No template found for convention-based route: ${modulePath}.tpls. This may be expected.`);
+    devlog(`No template found for convention-based route: ${modulePath}.tpls. This may be expected.`, 'trace');
   }
 
   const renderedHtml = renderTemplate(template, {}); // No params in this system
@@ -137,8 +137,8 @@ async function handleRouteChange() {
     } catch (error) {
       // If both systems fail, then it's a 404.
       appContainer.innerHTML = '<h2>404 - Page Not Found</h2>';
-      console.warn(`No route found for path: ${path}. Failed both route.json and convention-based lookup.`);
-      console.error(error); // Log the error for debugging.
+      devlog(`No route found for path: ${path}. Failed both route.json and convention-based lookup.`);
+      devlog(error, 'trace'); // Log the error for debugging.
     }
   }
 }
