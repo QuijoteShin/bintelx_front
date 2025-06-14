@@ -70,16 +70,38 @@ export function renderTemplate(templateString, data = {}) {
  * @param {any} message - The message or data to display in the console.
  * @param {string} [mode='log'] - The console method to use ('log', 'warn', 'error', 'table', 'info', etc.).
  */
-export function devlog(message, mode = 'log') {
+export function devlog(...messages) {
   if(MODE_IN === 'production') {
     return;
   }
+  let showTrace = false;
+  console.debug(...messages);
+  for(const message of messages) {
+    if(typeof message === 'object') { console.table(message); }
+    if(message === 'trace') {
+      showTrace = true;
+    }
+  }
+  if(showTrace) {
+    console.error('');
+  }
+}
 
-  if (typeof console[mode] === 'function') {
-    console[mode](message);
+/* This regular expression matches:
+ * ^: start of the string
+ * (https?|ftp):\/\/: captures http, https, or ftp followed by ://
+ * ([a-zA-Z0-9.-]+): captures the domain name (letters, numbers, dots, hyphens)
+ * (:\d+)? : optionally captures the port number (colon followed by one or more digits)
+ * (\/.*)?$: optionally captures anything after the port (path, query, etc.) to ensure the whole URL is matched
+ */
+export function removeDomainPart(originalString) {
+  const regex = /^(https?|ftp):\/\/[a-zA-Z0-9.-]+(:\d+)?(\/.*)?$/;
+  const replacementString = '';
+
+  if (regex.test(originalString)) {
+    return originalString.replace(/^(https?|ftp):\/\/[a-zA-Z0-9.-]+(:\d+)?/, replacementString);
   } else {
-    // Si el modo no es válido, usamos console.log como fallback.
-    console.log(`[devlog] Invalid mode '${mode}'. Falling back to 'log'.`);
-    console.log(message);
+    devlog("The original string does not appear to be in the format protocol://domain:port", 'warn');
+    return originalString;
   }
 }
