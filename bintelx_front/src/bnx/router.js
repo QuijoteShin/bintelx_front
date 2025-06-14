@@ -6,7 +6,7 @@ import { authFlow } from "./auth.js"; // Import the simplified authFlow
 const routes = __ROUTES__;
 const appContainer = document.getElementById('app');
 
-// --- Helper Functions (unchanged) ---
+// --- helper Functions  ---
 async function DOMDefaults(container) {
   const buttons = container.querySelectorAll('button:not([type])');
   buttons.forEach(button => {
@@ -80,16 +80,13 @@ function findMatchingRoute(currentPath) {
   return null;
 }
 
-
 /**
  * Main function to handle route changes.
  */
 async function handleRouteChange() {
   devlog(`--- Handling route change for: ${window.location.pathname} ---`);
-
   // Call the main auth function. It will handle showing the overlay if needed.
   const isAuthenticated = await authFlow.validate();
-
   // If not authenticated, authFlow has already shown the overlay. Stop processing.
   if (!isAuthenticated) {
     devlog('Authentication required. Halting route processing.');
@@ -124,10 +121,6 @@ async function handleRouteChange() {
  */
 export function initRouter() {
   devlog('Initializing router...');
-
-  // REMOVED: The call to `authFlow.init()` is no longer needed.
-  // The auth module is now self-contained.
-
   window.addEventListener('popstate', handleRouteChange);
 
   document.body.addEventListener('click', e => {
