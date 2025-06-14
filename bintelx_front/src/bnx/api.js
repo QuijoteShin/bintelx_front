@@ -1,11 +1,8 @@
-const API_BASE_URL = 'https://api.bintelx.com/v1'; // Placeholder
-
-// Mock user data for initial development
-const mockUsers = [
-  { id: 1, name: 'Alice', email: 'alice@example.com' },
-  { id: 2, name: 'Bob', email: 'bob@example.com' },
-  { id: 3, name: 'Charlie', email: 'charlie@example.com' },
-];
+// src/bnx/api.js
+import { config } from '../config.js';
+import {devlog} from "./utils";
+const MODE_IN = __MODE_IN__;
+let mockApiHandler = null;
 
 /**
  * A wrapper for the fetch API.
@@ -14,42 +11,57 @@ const mockUsers = [
  * @returns {Promise<any>}
  */
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${config.api.baseUrl}${endpoint}`;
 
-  // Placeholder for auth token logic
-  const token = localStorage.getItem('authToken');
-
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  // moved inside to prevent force async all
+  if(MODE_IN === 'development' && mockApiHandler === null) {
+    if (!mockApiHandler) {
+      try {
+        const { default: handler } = await import('./api_mock.js');
+        mockApiHandler = handler;
+      } catch (error) {
+        devlog("¿ Do 'mock' exists ?", error);
+        mockApiHandler = () => null; // :dont try again
+      }
+    }
   }
 
-  // --- MOCKING LOGIC ---
-  // For this initial build, we will return mock data for specific endpoints.
-  if (endpoint === '/users' && options.method === 'GET') {
-    console.log(`[MOCK API] GET ${url}`);
-    return new Promise(resolve => setTimeout(() => resolve(mockUsers), 500));
+  if(MODE_IN === 'development' && mockApiHandler) {
+    const mockResponse = await mockApiHandler(endpoint, options);
+
+    if (mockResponse !== null) {
+      return mockResponse;
+    }
   }
-  // --- END MOCKING LOGIC ---
+
+  const headers = { ...options.headers};
+  let body = options.body;
+
+  if (!(body instanceof FormData)) {
+    if (body && typeof body === 'object') {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(body);
+    }
+  }
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    devlog(`[API] Calling: ${options.method.toUpperCase()} ${url}`);
+    const response = await fetch(url, { ...options, headers, body});
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({ message: 'Error with no JSON body' }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-    return await response.json();
+    // If the response has no content (e.g., a 204 No Content), return an empty object.
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   } catch (error) {
-    console.error('API request failed:', error);
+    console.error('[API] request failed:', error);
     throw error;
   }
 }
 
 export const api = {
   get: (endpoint) => request(endpoint, { method: 'GET' }),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
+  post: (endpoint, body) => request(endpoint, { method: 'POST', body: body }),
   // Add put, delete, etc. as needed
 };

@@ -1,15 +1,19 @@
 // src/bnx/auth.js
-
 import { config } from '../config.js';
 import { api } from './api.js';
-const MODE_IN = __MODE_IN__;
+import { devlog } from "./utils.js";
+import { loadComponent } from './loader.js';
 
-/**
- * Sets a cookie. In a dev environment (non-https), the 'secure' flag is omitted.
- * @param {string} name - The name of the cookie.
- * @param {string} value - The value of the cookie.
- * @param {number} days - The number of days until the cookie expires.
- */
+const MODE_IN = __MODE_IN__;
+let storedAppNode = null;
+let appOriginalParent = null;
+let sessionCheckInterval = null;
+
+const SESSION_TIMESTAMP_KEY = 'auth_validated_at';
+const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const SESSION_MONITOR_DURATION = 1 * 60 * 1000; // 1 minute
+
+// --- Cookie Functions (unchanged) ---
 function setCookie(name, value, days = 7) {
     let expires = "";
     if (days) {
@@ -17,21 +21,12 @@ function setCookie(name, value, days = 7) {
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         expires = "; expires=" + date.toUTCString();
     }
-
     let cookieString = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
-    if(MODE_IN === 'production') {
+    if (MODE_IN === 'production') {
         cookieString += "; Secure";
-    } else {
-        devlog("Running in Development mode, 'Secure' flag omitted.");
     }
     document.cookie = cookieString;
 }
-
-/**
- * Gets a cookie by name.
- * @param {string} name - The name of the cookie.
- * @returns {string|null} The cookie value or null if not found.
- */
 function getCookie(name) {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
@@ -42,133 +37,127 @@ function getCookie(name) {
     }
     return null;
 }
-
-/**
- * Removes a cookie by name.
- * @param {string} name - The name of the cookie to remove.
- */
 function removeCookie(name) {
     document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 
 
-// --- Login UI and State Management ---
-
-let loginCheckInterval = null;
-
 /**
- * Hides the main app content and displays a full-screen login form.
+ * CORRECTED: Called when the login UI returns a token.
+ * It no longer re-routes, which preserves the application state.
+ * @param {string} [token] - The session token from the login API.
  */
-function showLoginOverlay() {
-    // If overlay already exists, do nothing
-    if (document.getElementById('login-overlay')) return;
-
-    // Hide main content
-    const mainApp = document.getElementById('app');
-    if (mainApp) mainApp.style.display = 'none';
-
-    // Create and inject the overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'login-overlay';
-    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; align-items:center; justify-content:center;';
-    overlay.innerHTML = `
-        <div class="card" style="width: 320px;">
-            <h3 class="card-title">Authentication Required</h3>
-            <form id="login-form">
-                <div class="form-group" style="display:block;">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required />
-                </div>
-                <div class="form-group" style="display:block; margin-top: 1rem;">
-                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required />
-                </div>
-                <button type="submit" class="button-primary" style="width:100%; margin-top: 1.5rem;">Login</button>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-
-    // Add logic to handle the form submission (this is a mock)
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        alert('Mock Login Successful!');
-        // In a real app, you would call an API, get a token, and then...
-        setCookie(config.AUTH_TOKEN_NAME, 'mock-dev-token-is-now-valid');
+function handleSuccessfulLogin(token) {
+    devlog(`Login successful. Received token from UI.`);
+    if (token) {
+        // 1. Save the session credentials
+        setCookie(config.AUTH_TOKEN_NAME, token);
+        sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now());
+        // 2. Start the background monitor to check for expiration
+        startSessionMonitor();
+        // 3. Simply hide the overlay. This restores the previous DOM state,
+        // including the text the user was typing in the form
         hideLoginOverlay();
-        window.location.reload(); // Easiest way to re-trigger validation
-    });
-
-    // Continuously check if the login page is visible
-    loginCheckInterval = setInterval(() => {
-        if (!document.getElementById('login-overlay')) {
-            devlog("Login overlay was removed. Re-creating it.");
-            showLoginOverlay();
-        }
-    }, 2000);
+        devlog('Overlay removed. App state is preserved.');
+    } else {
+        alert("Login failed. Please check your credentials.");
+    }
 }
 
-/**
- * Removes the login overlay and re-enables the main app view.
- */
 function hideLoginOverlay() {
     const overlay = document.getElementById('login-overlay');
     if (overlay) {
         overlay.remove();
     }
-    if (loginCheckInterval) {
-        clearInterval(loginCheckInterval);
-        loginCheckInterval = null;
+    if (appOriginalParent && storedAppNode) {
+        appOriginalParent.appendChild(storedAppNode);
     }
-    const mainApp = document.getElementById('app');
-    if (mainApp) mainApp.style.display = 'block';
+    storedAppNode = null;
+    appOriginalParent = null;
 }
 
+function showLoginOverlay() {
+    stopSessionMonitor();
+    if (document.getElementById('login-overlay')) return;
+    const mainApp = document.getElementById('app');
+    if (mainApp) {
+        appOriginalParent = mainApp.parentElement;
+        storedAppNode = mainApp.parentElement.removeChild(mainApp);
+    }
+    // overlay ui
+    const overlay = document.createElement('div');
+    overlay.id = 'login-overlay';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; align-items:center; justify-content:center;';
+    const formContainer = document.createElement('div');
+    formContainer.id = 'login-form-container';
+    overlay.appendChild(formContainer);
+    document.body.appendChild(overlay);
+    loadComponent(config.authAppPath, '#login-form-container', {
+        onSuccess: handleSuccessfulLogin
+    });
+}
 
-// --- Main Validation Logic ---
+function stopSessionMonitor() {
+    if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+        sessionCheckInterval = null;
+        devlog("Session monitor stopped.");
+    }
+}
 
-const SESSION_TIMESTAMP_KEY = 'auth_validated_at';
-const SESSION_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+function startSessionMonitor() {
+    stopSessionMonitor();
+    devlog(`Session monitor started. Checking every ${SESSION_MONITOR_DURATION / 1000}s.`);
+    sessionCheckInterval = setInterval(async () => {
+        const token = getCookie(config.AUTH_TOKEN_NAME);
+        const isValid = await validateTokenAPI(token);
+        if (!isValid) {
+            devlog("Session expired or became invalid. Showing login overlay.");
+            showLoginOverlay();
+        }
+    }, SESSION_MONITOR_DURATION);
+}
+
+// --- Main Validation Flow ---
+async function validateTokenAPI(token) {
+    if (!token) return false;
+    try {
+        const response = await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token });
+        // ensure your mock returns 'success' for this validation.
+        return response && response.status === 'success';
+    } catch (error) {
+        removeCookie(config.AUTH_TOKEN_NAME);
+        return false;
+    }
+}
 
 /**
- * Checks if the user's session is valid.
- * 1. Checks for a recent validation timestamp in sessionStorage.
- * 2. If not found or expired, checks for a token in cookies.
- * 3. If a token exists, validates it with the backend API.
- * @returns {Promise<boolean>} - True if authenticated, false otherwise.
+ * The main function called by the router to check session status.
  */
-export async function validateSession() {
-    // 1. Check for a cached session validation
+async function validateAndShowOverlayIfNeeded() {
+    // 1. check for a cached session in the current tab.
     const lastValidation = sessionStorage.getItem(SESSION_TIMESTAMP_KEY);
     if (lastValidation && (Date.now() - lastValidation < SESSION_CACHE_DURATION)) {
-        devlog("Auth: Validation cached in session. Access granted.");
+        startSessionMonitor();
         return true;
     }
-
-    // 2. Check for the auth token in cookies
+    // 2. if no cache, check for a persistent cookie.
     const token = getCookie(config.AUTH_TOKEN_NAME);
     if (!token) {
-        devlog("Auth: No token cookie found. Access denied.");
+        showLoginOverlay();
         return false;
     }
-
-    // 3. Validate the token with the backend
-    try {
-        devlog("Auth: Validating token with API...");
-        await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token });
-        // If the API call succeeds, the token is valid
-        devlog("Auth: Token is valid. Access granted.");
+    // 3. if a cookie exists, validate it with the API.
+    const isValid = await validateTokenAPI(token);
+    if (isValid) {
         sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now());
+        startSessionMonitor();
         return true;
-    } catch (error) {
-        console.error("Auth: Token validation failed.", error);
-        removeCookie(config.AUTH_TOKEN_NAME); // The token is bad, remove it
+    } else {
+        showLoginOverlay();
         return false;
     }
 }
-
-// Export the function that will be called by the router
 export const authFlow = {
-    validate: validateSession,
-    showLogin: showLoginOverlay,
+    validate: validateAndShowOverlayIfNeeded,
 };
