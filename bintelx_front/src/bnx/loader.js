@@ -1,6 +1,6 @@
 // src/bnx/loader.js
 
-import { renderTemplate } from './utils.js'; // Asumo que renderTemplate ya está importado
+import { renderTemplate } from './utils.js';
 
 /**
  * Dynamically loads a template (.tpls) and its associated script (.js) into a target HTML element.
@@ -21,13 +21,14 @@ export async function loadContentIntoElement(config, targetElement, data = {}) {
     }
     if (!config.templatePath) {
         console.error(`[loadContentIntoElement] config.templatePath is required to load content.`);
-        // No return, might proceed with empty template if script is primary
+        // proceed with empty template if script is primary
     }
 
     try {
         let templateHtml = '';
         if (config.templatePath) {
             // Fetch the template using its full path
+            // fetch vs promise
             const templateResponse = await fetch(`/${config.templatePath}`);
             if (!templateResponse.ok) {
                 throw new Error(`Failed to load template from ${config.templatePath}: ${templateResponse.statusText}`);
@@ -36,7 +37,6 @@ export async function loadContentIntoElement(config, targetElement, data = {}) {
         }
         
         // Render the template into the target element.
-        // Assumes renderTemplate is available and handles data injection.
         targetElement.innerHTML = renderTemplate(templateHtml, data); 
 
         // Execute the module's logic if a script path is provided.
