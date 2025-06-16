@@ -37,6 +37,7 @@
     --color-text-primary: var(--color-gray-900);
     --color-text-secondary: var(--color-gray-700);
     --color-white: #ffffff;
+    --color-red: #ef4444;
 
     --color-background-body: var(--color-gray-50);
     --color-background-card: var(--color-white);
@@ -141,7 +142,7 @@ button, .button {
 }
 
 .text-error {
-    color: #ef4444 !important;
+    color: var(--color-red) !important;
     font-weight: var(--font-weight-medium);
 }
 
