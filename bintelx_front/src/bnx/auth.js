@@ -92,9 +92,6 @@ function showLoginOverlay() {
     formContainer.id = 'login-form-container';
     overlay.appendChild(formContainer);
     document.body.appendChild(overlay);
-    loadContentIntoElement (config.authAppPath, '#login-form-container', {
-        onSuccess: handleSuccessfulLogin
-    });
     loadContentIntoElement(
        {
            templatePath: config.AUTH_APP_TEMPLATE_PATH,
