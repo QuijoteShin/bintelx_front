@@ -1,0 +1,30 @@
+/* src/bnx/components/stepper/stepper.css */
+.stepper-step {
+    background-color: var(--color-background-subtle, white);
+    opacity: 1;
+    transform: translateX(0); /* Default resting state */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease-in-out;
+    visibility: hidden; /* Controlled by the 'visible' class */
+}
+
+.stepper-step.visible {
+    visibility: visible;
+}
+
+/* State before a step slides IN */
+.stepper-step.slide-from-right {
+    transform: translateX(100%);
+}
+.stepper-step.slide-from-left {
+    transform: translateX(-100%);
+}
+
+/* Final state after a step slides OUT */
+.stepper-step.slide-to-left {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+.stepper-step.slide-to-right {
+    transform: translateX(100%);
+    opacity: 0;
+}
