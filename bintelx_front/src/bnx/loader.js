@@ -11,51 +11,53 @@ import { renderTemplate } from './utils.js';
  * @param {string} [config.scriptPath] - The full path to the .js file.
  * @param {HTMLElement} targetElement - The element into which the content should be loaded (e.g., a div inside Stepper's Shadow DOM).
  * @param {Object} [data={}] - Optional data object to pass to the script's default export function.
- * Expected to contain `stepData` and `updateStepDataCallback` for Stepper.
  * @returns {Promise<void>}
  */
 export async function loadContentIntoElement(config, targetElement, data = {}) {
-    if (!targetElement) {
-        console.error(`[loadContentIntoElement] Target element is null or undefined. Cannot load content.`);
-        return;
-    }
-    if (!config.templatePath) {
-        console.error(`[loadContentIntoElement] config.templatePath is required to load content.`);
-        // proceed with empty template if script is primary
-    }
+  if(typeof targetElement === 'string') {
+    targetElement = document.querySelector(targetElement);
+    devlog(`[loadContentIntoElement] Target element is string. Loading selector.`);
+  }
 
-    try {
-        let templateHtml = '';
-        if (config.templatePath) {
-            // Fetch the template using its full path
-            // fetch vs promise
-            const templateResponse = await fetch(`/${config.templatePath}`);
-            if (!templateResponse.ok) {
-                throw new Error(`Failed to load template from ${config.templatePath}: ${templateResponse.statusText}`);
-            }
-            templateHtml = await templateResponse.text();
-        }
-        
-        // Render the template into the target element.
-        targetElement.innerHTML = renderTemplate(templateHtml, data); 
+  if (!targetElement) {
+    devlog(`[loadContentIntoElement] Target element is null or undefined. Cannot load content.`);
+    return;
+  }
+  if (!config.templatePath) {
+    devlog(`[loadContentIntoElement] config.templatePath is required to load content.`);
+    // proceed with empty template if script is primary
+  }
 
-        // Execute the module's logic if a script path is provided.
-        // Dynamic import paths are resolved relative to the importing module's URL.
-        // By using an absolute path (`/${config.scriptPath}`), we ensure consistency.
-        if (config.scriptPath) {
-            const module = await import(`/${config.scriptPath}`);
-            if (module.default && typeof module.default === 'function') {
-                // Pass the targetElement (the step's container), previous step data, and update callback.
-                // This aligns with how Stepper.js currently passes these.
-                module.default(targetElement, data.stepData || {}, data.updateStepDataCallback);
-            } else {
-                console.warn(`[loadContentIntoElement] Script for ${config.scriptPath} has no default export function.`);
-            }
-        }
-    } catch (error) {
-        console.error(`[loadContentIntoElement] Error loading content for path ${config.templatePath || config.scriptPath}:`, error);
-        targetElement.innerHTML = `<p style="color:red;">Error loading content.</p>`;
-    }
+  try {
+    let templateHtml  = ''
+    let runLogic      = null;
+     if (config.templatePath?.length > 1 && config.scriptPath) {
+       const [template, { default: logic }] = await Promise.all([
+            import(`../apps/${config.templatePath}`).then(m => m.default),
+            import(`../apps/${config.scriptPath}`)
+       ]);
+       templateHtml = template;
+       runLogic = logic;
+     }
+      else if (config.templatePath?.length > 1 && config.scriptPath.length < 1) {
+      const [template, { default: logic }] = await Promise.all([
+        import(`../apps/${config.templatePath}`).then(m => m.default),
+      ]);
+       templateHtml = template;
+       runLogic = logic;
+     }
+     if(!templateHtml) {
+       templateHtml = '<section></section>';
+     }
+     targetElement.innerHTML = renderTemplate(templateHtml, data);
+     if (runLogic) {
+          runLogic(targetElement, data);
+     }
+
+  } catch (error) {
+    console.error(`[loadContentIntoElement] Error loading content for path ${config.templatePath || config.scriptPath}:`, error);
+    targetElement.innerHTML = `<p class="text-error">Error loading content.</p>`;
+  }
 }
 
 
@@ -69,26 +71,24 @@ export async function loadContentIntoElement(config, targetElement, data = {}) {
  * @returns {Promise<void>}
  */
 export async function loadComponent(modulePath, targetSelector, data = {}) {
-    const targetElement = document.querySelector(targetSelector);
-    if (!targetElement) {
-        console.error(`[loadComponent] Target element "${targetSelector}" not found.`);
-        return;
+  const targetElement = document.querySelector(targetSelector);
+  if (!targetElement) {
+    console.error(`[loadComponent] Target element "${targetSelector}" not found.`);
+    return;
+  }
+  // Assume all modules follow the 'index.tpls' and 'index.js' convention inside their directory.
+  try {
+    const [template, { default: logic }] = await Promise.all([
+      import(`../apps/${modulePath}/index.tpls`).then(m => m.default),
+      import(`../apps/${modulePath}/index.js`)
+    ]);
+    const renderedHtml = renderTemplate(template, data);
+    targetElement.innerHTML = renderedHtml;
+    if (logic) {
+      logic(targetElement, data);
     }
-    // Refactorizar esto para usar loadContentIntoElement si la estructura de `modulePath` lo permite,
-    // o mantenerlo separado si tienen propósitos y convenciones muy distintas.
-    // Por ahora, lo dejamos como estaba y añadimos la nueva función.
-    try {
-        const [template, { default: logic }] = await Promise.all([
-            import(`../apps/${modulePath}/index.tpls`).then(m => m.default),
-            import(`../apps/${modulePath}/index.js`)
-        ]);
-        const renderedHtml = renderTemplate(template, data);
-        targetElement.innerHTML = renderedHtml;
-        if (logic) {
-            logic(targetElement, data);
-        }
-    } catch (error) {
-        console.error(`[loadComponent] Failed to load module "${modulePath}" into "${targetSelector}".`, error);
-        targetElement.innerHTML = `<p style="color:red;">Error loading component: ${modulePath}</p>`;
-    }
+  } catch (error) {
+    devlog(`[loadComponent] Failed to load module "${modulePath}" into "${targetSelector}".`, error);
+    targetElement.innerHTML = `<p class="text-error">Error loading component: ${modulePath}</p>`;
+  }
 }
