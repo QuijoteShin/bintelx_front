@@ -24,15 +24,6 @@ async function handleMockRequest(endpoint, options) {
             devlog(`[MOCK API] Intercepted: GET ${url}`);
             return new Promise(resolve => setTimeout(() => resolve(mockUsers), 500));
 
-        case 'POST /_auth/validate':
-            const body = options.body;
-            devlog(`[MOCK API] Intercepted: POST ${url} with token: ${body.token}`);
-            if (body.token && body.token.includes('valid')) {
-                return Promise.resolve({ status: 'success' });
-            } else {
-                return Promise.reject(new Error('Invalid Mock Token'));
-            }
-
         case 'POST /_security/devtools-opened':
             devlog(`[MOCK API] Intercepted: POST ${url} with body:`, options.body);
             return Promise.resolve({ status: 'logged' });
@@ -65,31 +56,30 @@ async function handleMockRequest(endpoint, options) {
 
             return new Promise(resolve => setTimeout(() => resolve(mockResponse), 800));
 
-        case `POST ${config.AUTH_LOGIN_ENDPOINT}`:
-            devlog(`[MOCK API] Intercepted: POST ${url}`);
-            const credentials = options.body;
-            // just send both
-            if ((credentials.username && credentials.password)
-                && (credentials.username !== credentials.password)
-            ) {
-                devlog(`   > Login attempt for user: ${credentials.username}`);
-                // fake token
-                return Promise.resolve({
-                    status: 'success',
-                    token: 'mock-token-from-api-login-endpoint-valid'
-                });
-            } else {
-                return Promise.reject(new Error('Invalid credentials'));
-            }
-
-        case `POST ${config.AUTH_TOKEN_VALIDATE_ENDPOINT}`:
-            const bodyT = options.body;
-            devlog(`[MOCK API] Intercepted: POST ${url} with token: ${bodyT.token}`);
-            if (bodyT.token) { // Cualquier token es válido en este mock
-                return Promise.resolve({ status: 'success' });
-            } else {
-                return Promise.reject(new Error('Invalid Mock Token'));
-            }
+        // case `POST ${config.AUTH_LOGIN_ENDPOINT}`:
+        //     devlog(`[MOCK API] Intercepted: POST ${url}`);
+        //     const credentials = options.body;
+        //     // just send both
+        //     if ((credentials.username && credentials.password)
+        //         && (credentials.username !== credentials.password)
+        //     ) {
+        //         devlog(`   > Login attempt for user: ${credentials.username}`);
+        //         // fake token
+        //         return Promise.resolve({
+        //             status: 'success',
+        //             token: 'mock-token-from-api-login-endpoint-valid'
+        //         });
+        //     } else {
+        //         return Promise.reject(new Error('Invalid credentials'));
+        //     }
+        //  case `POST ${config.AUTH_TOKEN_VALIDATE_ENDPOINT}`:
+        //        const bodyT = options.body;
+        //        devlog(`[MOCK API] Intercepted: POST ${url} with token: ${bodyT.token}`);
+        //        if (bodyT.token) { // Cualquier token es válido en este mock
+        //            return Promise.resolve({ status: 'success' });
+        //        } else {
+        //            return Promise.reject(new Error('Invalid Mock Token'));
+        //        }
 
         default:
             // keep api call

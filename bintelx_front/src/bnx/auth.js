@@ -128,8 +128,7 @@ async function validateTokenAPI(token) {
     if (!token) return false;
     try {
         const response = await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token });
-        // ensure your mock returns 'success' for this validation.
-        return response && response.status === 'success';
+        return !!(response && response.status === 200 && response.d && response.d.success); // true|false
     } catch (error) {
         removeCookie(config.AUTH_TOKEN_NAME);
         return false;

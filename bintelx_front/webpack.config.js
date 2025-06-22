@@ -73,6 +73,10 @@ module.exports = (env, argv) => {
       hot: true,
       historyApiFallback: true,
       port: 8080,
+      host: 'localhost',
+      allowedHosts: [
+        '.dev.local'
+      ],
     },
     plugins: [
       new CleanWebpackPlugin(),

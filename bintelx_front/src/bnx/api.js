@@ -28,7 +28,6 @@ async function request(endpoint, options = {}) {
 
   if(MODE_IN === 'development' && mockApiHandler) {
     const mockResponse = await mockApiHandler(endpoint, options);
-
     if (mockResponse !== null) {
       return mockResponse;
     }
@@ -37,31 +36,57 @@ async function request(endpoint, options = {}) {
   const headers = { ...options.headers};
   let body = options.body;
 
-  if (!(body instanceof FormData)) {
-    if (body && typeof body === 'object') {
-      headers['Content-Type'] = 'application/json';
+  // Automatically stringify body if it's an object and not FormData.
+  if (!(body instanceof FormData) && body && typeof body === 'object') {
+    headers['Content-Type'] = 'application/json';
       body = JSON.stringify(body);
-    }
   }
 
   try {
     devlog(`[API] Calling: ${options.method.toUpperCase()} ${url}`);
     const response = await fetch(url, { ...options, headers, body});
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Error with no JSON body' }));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-    // If the response has no content (e.g., a 204 No Content), return an empty object.
     const text = await response.text();
-    return text ? JSON.parse(text) : {};
+    const data = text ? JSON.parse(text) : {};
+
+    if (!response.ok) {
+      const error = new Error(data.message || `HTTP error! Status: ${response.status}`);
+      error.response = {
+        d: data.data ? data.data : data,
+        status: response.status,
+        headers: response.headers
+      };
+      throw error;
+    }
+
+    return {
+      d: data.data ? data.data : data,
+      status: response.status,
+      headers: response.headers
+    };
+
   } catch (error) {
-    console.error('[API] request failed:', error);
+    if (error.name === 'AbortError') {
+      devlog('[API] Request was canceled by the user.');
+    } else {
+      console.error('[API] Request failed:', error);
+    }
     throw error;
   }
 }
 
 export const api = {
-  get: (endpoint) => request(endpoint, { method: 'GET' }),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: body }),
-  // Add put, delete, etc. as needed
+  /**
+   * Performs a GET request.
+   * @param {string} endpoint - The endpoint to call.
+   * @param {object} options - Optional fetch options, like a `signal`.
+   */
+  get: (endpoint, options = {}) => request(endpoint, { method: 'GET', ...options }),
+
+  /**
+   * Performs a POST request.
+   * @param {string} endpoint - The endpoint to call.
+   * @param {object} body - The body of the request.
+   * @param {object} options - Optional fetch options, like a `signal`.
+   */
+  post: (endpoint, body, options = {}) => request(endpoint, { method: 'POST', body: body, ...options }),
 };
