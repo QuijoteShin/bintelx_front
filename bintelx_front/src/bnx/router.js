@@ -125,7 +125,13 @@ export function initRouter() {
 
   document.body.addEventListener('click', e => {
     const anchor = e.target.closest('a');
-    if (anchor && anchor.href && anchor.host === window.location.host) {
+    if (!anchor || !anchor.href) {
+      return;
+    }
+    if (anchor.pathname === window.location.pathname && anchor.hash) {
+      return;
+    }
+    if (anchor.host === window.location.host) {
       e.preventDefault();
       const newPath = anchor.pathname;
       if (newPath !== window.location.pathname) {
