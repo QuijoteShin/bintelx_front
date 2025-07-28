@@ -1,0 +1,6 @@
+<div>
+  <h4>Step 1: Username</h4>
+  <label for="username">Username:</label>
+  <input type="text" id="username" name="username" required autocomplete="false">
+  <div class="field_error text-error" id="usernameError" style="; font-size: var(--text-size-base);"></div>
+</div>

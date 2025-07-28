@@ -18,6 +18,7 @@
 
     --line-height-normal: 1.5;
     --line-height-heading: 1.2; /*  */
+    --line-height-small: 1.0;
     --letter-spacing-caps: 0.08rem; /*  */
 
     /* Colors */
@@ -110,6 +111,7 @@ body {
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card-lifted);
     padding: var(--spacing-6);
+    margin-top: var(--spacing-4);
 }
 
 .card-title {
@@ -185,6 +187,12 @@ details > summary::-webkit-details-marker {
 
 .collapsible-content {
     padding: 1rem 0 1.5rem 2.25rem;
+}
+
+@media (max-width: 767px) {
+    .collapsible-content {
+        padding: 0;
+    }
 }
 
 .summary-content {
@@ -490,4 +498,292 @@ a.button-link:hover {
     font-size: 1.75rem;
     font-weight: 600;
     margin-bottom: 1.5rem;
+}
+
+/*
+  Status Badges
+ */
+.status-badge {
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-medium);
+    font-size: 0.875rem;
+    white-space: nowrap; /* Ensures the badge text doesn't wrap */
+}
+
+.status-badge.status-active {
+    background-color: #dcfce7; /* Light Green */
+    color: #166534; /* Dark Green */
+}
+
+.status-badge.status-inactive {
+    background-color: var(--color-gray-200);
+    color: var(--color-gray-700);
+}
+
+/* Supercharged List / Checkbox Styling */
+.supercharged-list {
+    display: grid;
+    gap: var(--spacing-3);
+    /* Móvil-Primero: Por defecto, es una sola columna.
+      En pantallas más anchas (>= 500px), creará columnas de un mínimo de 220px.
+      'auto-fit' hará que se ajusten para llenar el espacio, creando un grid fluido.
+    */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.supercharged-list .list-item {
+    display: flex !important;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms;
+    /* Para el caso "Other:" */
+    flex-wrap: wrap;
+}
+
+.supercharged-list .list-item:hover {
+    background-color: var(--color-background-subtle);
+}
+
+.supercharged-list .list-item input[type="checkbox"],
+.supercharged-list .list-item input[type="radio"]{
+    display: none; /* Ocultamos el checkbox nativo */
+}
+
+.supercharged-list .list-item .checkbox-icon-placeholder {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 150ms, border-color 150ms;
+    flex-shrink: 0;
+}
+
+/* Estilo para el checkmark (la palomita) */
+.supercharged-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder::after,
+.supercharged-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder::after{
+    content: '✔';
+    color: var(--color-white);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+/* Apariencia cuando está seleccionado */
+.supercharged-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder ,
+.supercharged-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder {
+    background-color: var(--color-primary-500);
+    border-color: var(--color-primary-500);
+}
+
+/* ---- FIX PARA EL CAMPO "OTHER" ---- */
+.supercharged-list .list-item.has-textfield {
+    align-content: flex-start; /* Alinea las líneas al inicio */
+}
+
+.supercharged-list .list-item-textfield {
+    flex-basis: 100%;
+    margin-top: var(--spacing-2);
+    margin-left: 0;
+}
+
+/* Estado de foco para accesibilidad */
+.supercharged-list .list-item input[type="checkbox"]:focus-visible + .checkbox-icon-placeholder {
+    box-shadow: 0 0 0 3px var(--color-primary-500-oklch);
+}
+
+
+@media (max-width: 767px) {
+    .mobile-text-center {
+        text-align: center;
+    }
+
+    .mobile-justify-center {
+        justify-content: center;
+    }
+}
+
+/* Data Tables */
+
+/*
+ * Bintelx Data Table Specific Styles
+ * Scoped to .data-table for better isolation.
+ */
+
+.data-table-wrapper {
+    overflow-x: auto; /* This enables horizontal scroll on small screens */
+    width: 100%;
+    scroll-timeline-name: --table-horizontal-scroll;
+    scroll-timeline-axis: inline; /* Queremos que reaccione al scroll horizontal */
+}
+
+.data-table {
+    width: 100%;
+    min-width: 700px; /* NEW: Prevents table from crushing on mobile. Scroll will activate below this width. */
+    border-collapse: collapse;
+    color: var(--color-text-primary);
+}
+
+/* --- Table Headers --- */
+.data-table thead th {
+    background-color: var(--color-background-subtle);
+    text-align: left;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 2px solid var(--color-border-subtle);
+    white-space: nowrap;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+}
+
+/* --- Table Body & Rows --- */
+.data-table tbody tr {
+    border-bottom: 1px solid var(--color-border-subtle);
+    transition: background-color 150ms;
+}
+
+.data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--color-background-subtle);
+}
+
+.data-table tbody td {
+    padding: var(--spacing-3) var(--spacing-4);
+    vertical-align: middle;
+}
+
+/* --- Collapsible Details Section --- */
+.data-table .collapsible-details {
+    position: relative;
+}
+
+.data-table .details-summary {
+    cursor: pointer;
+    list-style: none; /* Hides the default marker */
+    color: var(--color-primary-500);
+    font-weight: var(--font-weight-medium);
+}
+
+.data-table .details-summary::-webkit-details-marker {
+    display: none; /* Hides the default marker in Chrome/Safari */
+}
+
+.data-table .collapsible-details[open] > .details-summary {
+    color: var(--color-primary-600);
+}
+
+.data-table .details-content {
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-4);
+    background-color: var(--color-background-subtle);
+    border-left: 4px solid var(--color-primary-500); /* Accent border */
+    box-shadow: none;
+}
+
+.data-table .details-content h3 {
+    margin-top: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary-500);
+}
+
+.data-table .feature-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.data-table .feature-list li {
+    padding-left: 1.5rem;
+    position: relative;
+    margin-bottom: var(--spacing-2);
+}
+
+.data-table .feature-list li::before {
+    content: '✅'; /* Meaningful icon instead of a bullet */
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.data-table .details-footer {
+    margin-top: var(--spacing-4);
+    text-align: right;
+}
+
+/* --- Table Footer --- */
+.data-table tfoot td {
+    background-color: var(--color-background-subtle);
+    padding: var(--spacing-3) var(--spacing-4);
+    text-align: center;
+    font-size: 0.9em;
+    color: var(--color-text-secondary);
+}
+
+
+
+/*
+ * ===================================================================
+ * Data Table Feature Row (Versión Final con control JS)
+ * ===================================================================
+ */
+
+/* 1. Contenedor de la fila */
+.feature-row-container td {
+    padding: 0;
+    height: 250px;
+    position: relative; /* Contexto para el fondo */
+    overflow: hidden;
+}
+
+/* 2. Wrapper del contenido. Ya no es 'sticky' */
+.feature-row-container .feature-content-wrapper {
+    /* JS controlará su posición con 'transform' */
+    width: 88vw;
+    max-width: 900px;
+    height: 100%;
+
+    /* Centra el contenido de texto e hijos */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    /* Importante para que el JS lo mueva suavemente */
+    position: relative;
+    margin: 0 auto; /* Lo centra en el 'td' como punto de partida */
+}
+
+/* 3. El fondo que se moverá con efecto parallax */
+.feature-row-container .parallax-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+
+    background-image: var(--parallax-bg-image);
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    /* La posición X se controla por la variable JS, con 50% como valor inicial */
+    background-position: var(--bg-scroll-percentage, 50%) center;
+}
+
+/* 4. Contenido del usuario que va por encima */
+.feature-row-container .user-content-on-top {
+    position: relative;
+    z-index: 2;
+    color: white;
+    padding: var(--spacing-4);
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: var(--radius-lg);
 }

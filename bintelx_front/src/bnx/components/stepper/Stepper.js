@@ -6,28 +6,28 @@ import {loadContentIntoElement} from "../../loader"; // Synchronous import via W
 class Stepper extends HTMLElement {
     constructor() {
         super();
-        this._shadowRoot = this.attachShadow({ mode: 'open' });
-        this._shadowRoot.innerHTML = template;
-
+        this._useShadow = this.hasAttribute('use-shadow');
+        if (this._useShadow) {
+            this._renderRoot = this.attachShadow({ mode: 'open' });
+        } else {
+            this._renderRoot = this; // Usar el propio elemento (Light DOM)
+        }
         // Initialize internal state
         this._currentStepIndex = -1;
         this._isTransitioning = false;
         this._steps = [];
         this._stepData = {};
         this._stepElements = []; 
-        this._componentPrefix = '';
-
-        // A promise that resolves when connectedCallback has finished setup.
+        this._prefix = '';
+        //  resolves when connectedCallback has finished setup.
         this.ready = new Promise(resolve => (this._resolveReady = resolve));
     }
 
     connectedCallback() {
-        // Now it's safe to get references to internal elements.
-        this.stepContainer = this._shadowRoot.getElementById('step-container');
-        
+        this.stepContainer = this._renderRoot;
         // Assign a unique ID and prefix for this instance.
         this.id = this.id || `bnx-stepper-${Math.random().toString(36).substr(2, 9)}`;
-        this._componentPrefix = this.getAttribute('prefix') || this.id;
+        this._prefix = this.getAttribute('prefix') || this.id;
 
 
         // Add the component-specific styles to the shadow DOM.
@@ -35,7 +35,7 @@ class Stepper extends HTMLElement {
         styleSheet.setAttribute('rel', 'stylesheet');
         // NOTE: The path must be absolute from the project root for Webpack Dev Server.
         // styleSheet.setAttribute('href', './src/bnx/components/stepper/stepper.css');
-        this._shadowRoot.appendChild(styleSheet);
+        this._renderRoot.appendChild(styleSheet);
 
         console.log(`Stepper "${this.id}" connected and ready.`);
         this._resolveReady(); // Signal that the component is fully initialized.
@@ -43,7 +43,6 @@ class Stepper extends HTMLElement {
 
     async setSteps(stepsConfig = []) {
         await this.ready; // Wait for the component to be fully ready.
-
         this.stepContainer.innerHTML = ''; // Clear previous state
         this._steps = stepsConfig;
         this._stepElements = new Array(this._steps.length).fill(null);
@@ -89,7 +88,7 @@ class Stepper extends HTMLElement {
         if (!newStepElement) {
             newStepElement = document.createElement('div');
             newStepElement.className = 'stepper-step';
-            newStepElement.id = `${this._componentPrefix}-step-${stepId}`;
+            newStepElement.id = `${this._prefix}-step-${stepId}`;
             this._stepElements[index] = newStepElement;
 
             try {

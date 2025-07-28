@@ -6,7 +6,7 @@ This guide outlines the core principles and best practices for developing fronte
 
 The Bintelx frontend framework is built upon a set of fundamental principles designed to leverage modern web standards and foster robust, predictable, and maintainable code.
 
-*   **Standards First & Native Priority:** Always prioritize native, "vanilla" technologies and established web standards (W3C, IETF RFCs). Propose solutions that leverage the browser's built-in capabilities (e.g., native HTML5 elements like `<dialog>`, `<details>`, History API, Fetch API, Web Components, CSS Custom Properties). Avoid heavy, opinionated frameworks unless there is a compelling, explicitly justified reason.
+*   **Standards First & Native Priority:** Always prioritize native, "vanilla" technologies and established web standards (W3C, IETF RFCs). Propose solutions that leverage standard browser's built-in modern API capabilities (e.g., native HTML5 elements like `<dialog>`, `<details>`, History API, Fetch API, Web Components, CSS Custom Properties). Avoid heavy, opinionated frameworks unless there is a compelling, explicitly justified reason.
 
 *   **Simplicity and Robustness:** Architectures should be simple, robust, and maintainable. Prefer clear, standard code over complex or "magical" abstractions.
 
@@ -244,3 +244,116 @@ Maintain a consistent and logical file structure to promote discoverability and 
     *   `.js` for JavaScript logic.
     *   `.css` for component-specific styles.
 *   **`index` Files:** Use `index.js`, `index.tpls`, `index.css` as entry points for modules or components where applicable (e.g., `src/apps/layout/navigation/index.js`). Otherwise, use descriptive names matching the module (e.g., `two-step-login.tpls`).
+
+---
+
+## Usage Cases
+***
+
+# Real Time Colaboration Capabilities
+
+The P2P architecture with CRDTs and WebRTC is a fundamental framework for real-time collaboration. It serves as the foundation for the following developments. These are som user cases.
+
+
+### ## Video Conferencing 📹
+
+**Native Support.**
+
+* **How it works**: WebRTC (the "RTC" in the name) was designed for audio and video. The proposed architecture already includes the most difficult components: the **signaling server** and the logic to establish an `RTCPeerConnection`.
+* **Implementation**: To add video conferencing, the process is as follows:
+    1.  Request permission to access the camera and microphone via `navigator.mediaDevices.getUserMedia`.
+    2.  Add the resulting audio and video tracks to the existing `RTCPeerConnection` using `peerConnection.addTrack()`.
+    3.  On the remote end, listen for the `ontrack` event on the `RTCPeerConnection` to receive the streams from others and attach them to `<video>` elements.
+
+The `RTCDataChannel` for CRDTs and the video/audio streams travel over the same P2P connection managed by the `bnx/p2p.js` module.
+
+***
+
+### ## Shared Canvas and Forms 📝
+
+**Ideal Use Case for CRDTs.**
+
+1.  **Shared Canvas with Drawing and Text:**
+    * **How it works**: A collaborative canvas is a collection of objects (strokes, shapes, text). The canvas state can be modeled as a `Map` or `Set` CRDT.
+    * **Implementation**:
+        * Each element on the canvas (a stroke, a text box) is defined as an object with a unique ID.
+        * The entire state of the canvas is represented by an `LWW-Map` where keys are the object IDs and values are their properties (position, color, content).
+        * When a user draws or moves an object, the corresponding entry in the CRDT map is created or updated.
+        * The `RTCDataChannel` handles the synchronization of these CRDT state changes.
+
+2.  **Page Form Editor:**
+    * **How it works**: It is conceptually identical to the notes editor example. A form is a collection of fields.
+    * **Implementation**:
+        * Each form field (`<input>`, `<textarea>`) is associated with an `LWWRegister` instance.
+        * Any change to a field updates the CRDT and is propagated via the `RTCDataChannel`. The system is ready for this functionality without modification.
+
+***
+
+### ## Recording and Replicating Events in Real Time 🎥
+
+**Optimal Design for Event-Sourcing.**
+
+* **How it works**: This use case implements an event-sourcing system on a P2P basis, allowing for session replay.
+* **Implementation**:
+    1.  **Real-Time Replication**: This is already solved. Every user action generates a CRDT operation that is transmitted over the `RTCDataChannel`, replicating the action on other peers.
+    2.  **Session Recording**: An "observer peer" can be implemented to join the document room and perform the following:
+        * Listen to all CRDT operations transmitted over the `RTCDataChannel`.
+        * Save each operation in an ordered list with a timestamp: `[{timestamp: ..., crdt_op: ...}, ...]`. This array is the "raw recording."
+    3.  **Playback**: To replay the session, a client loads an empty initial state and applies the saved operations in order, respecting the timing, to visually recreate the session.
+
+The P2P architecture with CRDTs and WebRTC is a fundamental framework for real-time collaboration. It serves as the foundation for the following developments.
+
+***
+
+### ## Video Conferencing 📹
+
+**Native Support.**
+
+* **How it works**: WebRTC (the "RTC" in the name) was designed for audio and video. The proposed architecture already includes the most difficult components: the **signaling server** and the logic to establish an `RTCPeerConnection`.
+* **Implementation**: To add video conferencing, the process is as follows:
+    1.  Request permission to access the camera and microphone via `navigator.mediaDevices.getUserMedia`.
+    2.  Add the resulting audio and video tracks to the existing `RTCPeerConnection` using `peerConnection.addTrack()`.
+    3.  On the remote end, listen for the `ontrack` event on the `RTCPeerConnection` to receive the streams from others and attach them to `<video>` elements.
+
+The `RTCDataChannel` for CRDTs and the video/audio streams travel over the same P2P connection managed by the `bnx/p2p.js` module.
+
+***
+
+### ## Shared Canvas and Forms 📝
+
+**Ideal Use Case for CRDTs.**
+
+1.  **Shared Canvas with Drawing and Text:**
+    * **How it works**: A collaborative canvas is a collection of objects (strokes, shapes, text). The canvas state can be modeled as a `Map` or `Set` CRDT.
+    * **Implementation**:
+        * Each element on the canvas (a stroke, a text box) is defined as an object with a unique ID.
+        * The entire state of the canvas is represented by an `LWW-Map` where keys are the object IDs and values are their properties (position, color, content).
+        * When a user draws or moves an object, the corresponding entry in the CRDT map is created or updated.
+        * The `RTCDataChannel` handles the synchronization of these CRDT state changes.
+
+2.  **Page Form Editor:**
+    * **How it works**: It is conceptually identical to the notes editor example. A form is a collection of fields.
+    * **Implementation**:
+        * Each form field (`<input>`, `<textarea>`) is associated with an `LWWRegister` instance.
+        * Any change to a field updates the CRDT and is propagated via the `RTCDataChannel`. The system is ready for this functionality without modification.
+
+***
+
+### ## Recording and Replicating Events in Real Time 🎥
+
+**Optimal Design for Event-Sourcing.**
+
+* **How it works**: This use case implements an event-sourcing system on a P2P basis, allowing for session replay.
+* **Implementation**:
+    1.  **Real-Time Replication**: This is already solved. Every user action generates a CRDT operation that is transmitted over the `RTCDataChannel`, replicating the action on other peers.
+    2.  **Session Recording**: An "observer peer" can be implemented to join the document room and perform the following:
+        * Listen to all CRDT operations transmitted over the `RTCDataChannel`.
+        * Save each operation in an ordered list with a timestamp: `[{timestamp: ..., crdt_op: ...}, ...]`. This array is the "raw recording."
+    3.  **Playback**: To replay the session, a client loads an empty initial state and applies the saved operations in order, respecting the timing, to visually recreate the session.
+
+---
+
+In conclusion, the proposed architecture not only supports these edge and complex developmentss but is the ideal and modern platform to build them in a robust, scalable, and native web-standards-compliant way for LTS projects.
+
+---
+

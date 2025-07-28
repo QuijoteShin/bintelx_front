@@ -1,5 +1,7 @@
 // src/bnx/components/action-toolbar/ActionToolbar.js
 
+import "./action-toolbar.css";
+
 class ActionToolbar {
     /**
      * @param {HTMLElement} element The DOM element for the toolbar.
@@ -9,6 +11,7 @@ class ActionToolbar {
             throw new Error('A valid DOM element is required for ActionToolbar.');
         }
         this.element = element;
+        this.isVisible = true;
     }
 
     /**
@@ -41,7 +44,6 @@ class ActionToolbar {
         return !this.element.classList.contains('is-hidden');
     }
 
-    // Future enhancements for scroll handling would live here.
 }
 
 export default ActionToolbar;

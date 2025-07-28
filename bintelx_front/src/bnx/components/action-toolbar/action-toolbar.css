@@ -1,30 +1,72 @@
 /* src/bnx/components/action-toolbar/action-toolbar.css */
 
 .action-toolbar {
-    /* Mobile-first: Anchored to the bottom, full width */
+    /* Estilos base compartidos (mobile y desktop) */
+    background-color: var(--color-background-body, #ffffff);
+    padding: var(--spacing-4, 1rem);
+    /* Sombra sutil para "elevar" la barra, según Refactoring UI */
+    box-shadow: 0 -4px 15px -5px hsla(0, 0%, 0%, .1);
+}
+
+/* Comportamiento en MÓVIL (por defecto): barra fija en la parte inferior */
+.action-toolbar {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 10px; /* Add some padding */
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Slight shadow for visual separation */
-    background-color: #f8f9fa; /* A light background color, can be easily overridden */
-    display: flex; /* Arrange buttons horizontally */
-    justify-content: space-around; /* Distribute buttons evenly */
-    z-index: 1000; /* Ensure it's above other content */
+    display: flex;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+    gap: var(--spacing-3, 0.75rem);
+    border-top: 1px solid var(--color-border-subtle, #e5e5e5);
 }
 
-/* Desktop: Positioned in the lower right corner */
+/* DESKTOP */
 @media (min-width: 768px) {
     .action-toolbar {
-        position: sticky; /* Or fixed, depending on desired behavior with scrolling */
-        bottom: 20px;
-        right: 20px;
-        width: auto; /* Adjust width as needed, or let content define it */
-        border-radius: 8px; /* Optional: rounded corners for desktop */
+        position: sticky; /* O 'fixed' dependiendo del contenedor padre */
+        bottom: var(--spacing-6, 1.5rem);
+        left: auto; /* Deshacer el left: 0 */
+        width: auto;
+        border: none;
+        border-radius: var(--radius-lg, 0.5rem);
+        box-shadow: var(--shadow-card-lifted, 0 5px 15px 0 hsla(0, 0%, 0%, .15));
+        /* podemos añadir `float: right;` si es necesario, pero es mejor con flex/grid en el padre */
+        align-self: flex-end; /* Si .main-content es un contenedor flex con flex-direction: column */
+        margin-left: auto; /* Otra forma de empujarlo a la derecha */
     }
 }
 
-.action-toolbar.is-hidden {
-    display: none;
+/* ==========================================================================
+    4. Barra de Acciones (Action Toolbar)
+    ========================================================================== */
+.action-toolbar {
+    background-color: var(--color-background-body, #ffffff);
+    padding: var(--spacing-4, 1rem);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3, 0.75rem);
+}
+
+/* Estilos para MÓVIL (Barra inferior fija) */
+@media (max-width: 767px) {
+    .action-toolbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        border-top: 1px solid var(--color-border-subtle, #e5e5e5);
+        box-shadow: 0 -4px 15px -5px hsla(0, 0%, 0%, .1);
+        z-index: 10;
+    }
+}
+
+/* Estilos para ESCRITORIO (Tarjeta flotante en la esquina) */
+@media (min-width: 768px) {
+    .action-toolbar {
+        position: sticky;
+        bottom: 1.5rem;
+        width: auto;
+        margin-top: 2rem; /* Espacio por si el contenido es corto */
+        align-self: flex-end; /* Se alinea a la derecha del contenedor flex */
+    }
 }
