@@ -1,3 +1,6 @@
+// src/apps/_dashboard/index,js
+import {devlog} from "../../bnx/utils";
+
 export default function(container) {
-  console.log('Dashboard module loaded.');
+  devlog('Dashboard module loaded.');
 }

@@ -55,7 +55,7 @@ export function renderTemplate(templateString, data = {}) {
   const values = Object.values(context);
 
   try {
-    // Note: Using new Function() is safer than eval(), but still requires trusted template strings.
+    // Note: Using new Function() is safer than evil, but still requires trusted template strings.
     const templateFunction = new Function(...keys, `return \`${templateString}\`;`);
     return templateFunction(...values);
   } catch (e) {

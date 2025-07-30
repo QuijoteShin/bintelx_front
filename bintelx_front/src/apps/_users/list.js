@@ -1,7 +1,7 @@
-// /src/apps/users/list.js
+// src/apps/users/list.js
 
 import { api } from '../../bnx/api.js';
-import { renderTemplate } from '../../bnx/utils.js';
+import { renderTemplate, devlog } from '../../bnx/utils.js';
 import './list.css';
 
 const loadingTemplate = `<p>Loading users...</p>`;
@@ -36,7 +36,7 @@ let mainContainer;
  * @param {Array} users - The array of user objects.
  */
 function renderUserList(users) {
-  console.log('data',users);
+  devlog('data',users);
   const userListHtml = users.map(user => renderTemplate(userItemTemplate, { user })).join('');
   mainContainer.innerHTML = `<ul>${userListHtml}</ul>`;
 }
@@ -68,7 +68,7 @@ async function fetchAndRenderUsers() {
   mainContainer.innerHTML = loadingTemplate; // Show loading state first
 
   try {
-    const users = await api.get('/users');
+    const users = await api.get('/_users');
     if (users && users.length > 0) {
       renderUserList(users);
     } else {

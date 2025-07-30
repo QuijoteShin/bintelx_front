@@ -1,6 +1,6 @@
 // /src/config.js
 export const config = {
-    appName: 'Bintelx Clinical Agnostic Front',
+    appName: 'Bintelx Enterprise Agnostic Front',
     defaultLocale: 'es-CL',
     defaultRoute: '/_dashboard/index',
     appContainer: { loading: '<h2>Loading...</h2>' },
