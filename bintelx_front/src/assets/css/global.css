@@ -1,96 +1,91 @@
 /* /src/assets/css/global.css */
-/*
- * Bintelx Front - Global Styles & Design Tokens
- */
+/* ==========================================================================
+   BINTELX FRONT
+   ==========================================================================
+   This file provides a comprehensive set of base styles, design tokens,
+   and utility classes for the Bintelx enterprise platform. It merges
+   proven styles from `global_old.css` with the refined principles from
+   the unified design guide.
+   ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. CORE DESIGN TOKENS
+   Foundation of the visual language. Do not use hardcoded values.
+-------------------------------------------------------------------------- */
 :root {
     /* Fonts */
     --font-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
-
-    --text-size-base: 1rem;    /* 16px */
-    --text-size-lg: 1.125rem;  /* 18px */
-    --text-size-xl: 1.25rem;   /* 20px */
-
+    --text-size-sm: 0.875rem;   /* 14px */
+    --text-size-base: 1rem;     /* 16px */
+    --text-size-lg: 1.125rem;   /* 18px */
+    --text-size-xl: 1.25rem;    /* 20px */
+    --text-size-2xl: 1.5rem;    /* 24px */
+    --text-size-4xl: 2.5rem;    /* 40px - For featured data */
     --line-height-normal: 1.5;
-    --line-height-heading: 1.2; /*  */
-    --line-height-small: 1.0;
-    --letter-spacing-caps: 0.08rem; /*  */
+    --line-height-heading: 1.25;
+    --letter-spacing-caps: 0.08rem;
 
-    /* Colors */
-    --color-primary-500: hsl(217, 91%, 60%); /* Azul principal para acciones */
-    --color-primary-600: hsl(217, 91%, 55%); /* Azul para hover */
+    /* Colors (Primary action color is Blue) */
+    --color-primary-500: hsl(217, 91%, 60%);
+    --color-primary-600: hsl(217, 91%, 55%);
+    --color-primary-100: hsl(217, 91%, 95%);
 
-    --color-primary-500-oklch: oklch(68.5% .169 237.323); /* Inspirado en Sky-500 */
-    --color-primary-600-oklch: oklch(58.8% .158 241.966); /* Inspirado en Sky-600 */
-
+    /* Grays (From the battle-tested palette) */
+    --color-primary-500: hsl(217, 91%, 60%);
+    --color-primary-600: hsl(217, 91%, 55%);
+    --color-primary-100: hsl(217, 91%, 95%);
     --color-gray-50: #f9fafb;
     --color-gray-100: #f3f4f6;
     --color-gray-200: #e5e7eb;
     --color-gray-300: #d1d5db;
+    --color-gray-500: #6b7280;
     --color-gray-700: #374151;
     --color-gray-900: #111827;
-
-    --color-text-primary: var(--color-gray-900);
-    --color-text-secondary: var(--color-gray-700);
     --color-white: #ffffff;
     --color-red: #ef4444;
-
     --color-background-body: var(--color-gray-50);
     --color-background-card: var(--color-white);
     --color-background-subtle: var(--color-gray-100);
-    --color-background-subtle-separator: hsl(200, 10%, 94%); /*  */
-
     --color-border-default: var(--color-gray-300);
     --color-border-subtle: var(--color-gray-200);
+    --color-green-100: #dcfce7; /* Verde claro para fondo de badge "Active" */
+    --color-green-700: #166534; /* Verde oscuro para texto de badge "Active" */
 
-    /* Spacing */  /* Scale base 4px */
+
+    /* Semantic & UI Colors */
+    --color-text-primary: var(--color-gray-900);
+    --color-text-secondary: var(--color-gray-700);
+    --color-text-tertiary: var(--color-gray-500);
+    --color-text-link: var(--color-primary-500);
+
+
+    /* Spacing (4px base scale) */
+    --spacing-1: 0.25rem;   /* 4px */
     --spacing-2: 0.5rem;    /* 8px */
     --spacing-3: 0.75rem;   /* 12px */
     --spacing-4: 1rem;      /* 16px */
     --spacing-6: 1.5rem;    /* 24px */
     --spacing-8: 2rem;      /* 32px */
-    --spacing-6px-refUI: 6px; /*  */
 
     /* Border Radius */
-    --radius-md: 0.375rem;
-    --radius-lg: 0.5rem;
+    --radius-md: 0.375rem; /* 6px */
+    --radius-lg: 0.5rem;   /* 8px */
     --radius-full: 9999px;
 
-    /* Shadows */
-    --shadow-inner-profile: inset 0 2px 4px 0 hsla(0, 0%, 0%, .2); /*  */
-    --shadow-card-lifted: 0 5px 15px 0 hsla(0, 0%, 0%, .15); /*  */
-    --shadow-card-rich: 0 4px 6px hsla(0,0%,0%,.07), 0 5px 15px hsla(0,0%,0%,.1); /*  */
-
-
-    /* Details ( Collapsible Item ) */
-    --collapsible-item-accent-color: #007bff; /* Example: Bintelx Blue */
-    --collapsible-item-accent-color-hover: #0056b3; /* Darker blue for hover/focus */
-    --collapsible-item-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); /* Subtle shadow */
-    --collapsible-item-focus-shadow: 0 0 0 3px var(--collapsible-item-accent-color-hover); /* Focus ring shadow, increased spread */
-
-    --collapsible-item-marker-content-closed: '▶';
-    --collapsible-item-marker-content-open: '▼';
-    --collapsible-item-marker-color: var(--collapsible-item-accent-color);
-    --collapsible-item-marker-font-size: 0.8em;
-    --collapsible-item-marker-margin-right: 0.5em;
-
-    --collapsible-item-summary-padding: 0.5em 0.75em;
-
-    --blurred: blur(4px);
+    /* Shadows (Based on Refactoring UI principles) */
+    --shadow-sm: 0 1px 2px 0 hsla(0, 0%, 0%, 0.05);
+    --shadow-md: 0 4px 6px -1px hsla(0, 0%, 0%, 0.1), 0 2px 4px -2px hsla(0, 0%, 0%, 0.1);
+    --shadow-lg: 0 10px 15px -3px hsla(0, 0%, 0%, 0.1), 0 4px 6px -4px hsla(0, 0%, 0%, 0.1);
+    --shadow-inner: inset 0 2px 4px 0 hsla(0, 0%, 0%, 0.05);
 }
 
-
-
-
-/*
- * Design Tokens
- */
-
+/* --------------------------------------------------------------------------
+   2. GLOBAL RESETS & BODY STYLES
+-------------------------------------------------------------------------- */
 *, *::before, *::after {
     box-sizing: border-box;
 }
@@ -102,50 +97,64 @@ body {
     line-height: var(--line-height-normal);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    margin: 0;
 }
 
-/* Styles for common components reusing tokens */
-
-.card {
-    background-color: var(--color-background-card);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card-lifted);
-    padding: var(--spacing-6);
-    margin-top: var(--spacing-4);
-}
-
-.card-title {
-    font-size: var(--text-size-xl);
+/* --------------------------------------------------------------------------
+   3. NATIVE & SEMANTIC ELEMENT STYLING
+-------------------------------------------------------------------------- */
+/* Typography */
+h1, h2, h3, h4, h5, h6, legend {
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-heading);
-    margin: 0 0 var(--spacing-4) 0;
+    margin: 0;
 }
-
-button, .button {
-    padding: var(--spacing-2) var(--spacing-4);
-    border-radius: var(--radius-md);
-    font-weight: var(--font-weight-medium);
+p {
+    margin: 0;
+    color: var(--color-text-secondary);
+}
+a {
+    color: var(--color-text-link);
     text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-caps);
-    border: none;
-    cursor: pointer;
-    transition: background-color 150ms;
-    user-select: none;
-}
-
-.button-primary {
-    background-color: var(--color-primary-500);
-    color: var(--color-white);
-}
-
-.button-primary:hover {
-    background-color: var(--color-primary-600);
-}
-
-.text-error {
-    color: var(--color-red) !important;
     font-weight: var(--font-weight-medium);
+}
+a:hover { text-decoration: underline; }
+
+/* Forms & Fieldsets */
+form { display: flex; flex-direction: column; height: 100%; }
+fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+legend {
+    font-size: var(--text-size-lg);
+    padding: 0;
+    margin-bottom: var(--spacing-6);
+    width: 100%;
+    border-bottom: 1px solid var(--color-border-subtle);
+    padding-bottom: var(--spacing-3);
+}
+
+/* Accordion / Collapsible */
+details {
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+summary {
+    list-style: none;
+    cursor: pointer;
+    padding: var(--spacing-4) 0;
+}
+summary::-webkit-details-marker { display: none; }
+
+
+/* --------------------------------------------------------------------------
+   4. NATIVE FORM CONTROLS
+-------------------------------------------------------------------------- */
+label {
+    display: block;
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--spacing-2);
 }
 
 input,
@@ -157,11 +166,16 @@ select {
     border: 1px solid var(--color-border-default);
     border-radius: var(--radius-md);
     font-size: var(--text-size-base);
+    background-color: var(--color-white);
+    transition: border-color 150ms, box-shadow 150ms;
 }
 
-::selection {
-    background-color: var(--color-primary-500);
-    color: var(--color-white);
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px var(--color-primary-100);
 }
 
 ::placeholder {
@@ -169,114 +183,124 @@ select {
     opacity: 1;
 }
 
-input[type="checkbox"],
-input[type="radio"] {
-    accent-color: var(--color-primary-500);
-}
-
-details > summary {
-    list-style: none;
-}
-details > summary::-webkit-details-marker {
-    display: none;
-}
-
-.collapsible-item {
-    border-bottom: 1px solid var(--color-border-subtle, #e5e5e5);
-}
-
-.collapsible-content {
-    padding: 1rem 0 1.5rem 2.25rem;
-}
-
-@media (max-width: 767px) {
-    .collapsible-content {
-        padding: 0;
-    }
-}
-
-.summary-content {
-    display: flex;
+/* --------------------------------------------------------------------------
+   5. BUTTONS
+-------------------------------------------------------------------------- */
+button, .button {
+    display: inline-flex;
     align-items: center;
-    width: 100%;
-    gap: 1rem;
-    padding: 0.75rem 0; /* Espaciado vertical para el summary */
+    justify-content: center;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms, color 150ms;
+    user-select: none;
 }
 
-aside {
-    --sidebar-width: 240px; /* Un poco más de ancho para los iconos */
-    flex-shrink: 0;
+.button-primary {
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
+    border-color: var(--color-primary-500);
+}
+.button-primary:hover {
+    background-color: var(--color-primary-600);
+    border-color: var(--color-primary-600);
 }
 
-
-/* aside */
-aside {
-    --sidebar-width: 220px;
-    flex-shrink: 0;
+/* For secondary actions like 'Reset' or 'Cancel' */
+.button-secondary {
+    background-color: var(--color-white);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-default);
+}
+.button-secondary:hover {
+    background-color: var(--color-gray-50);
+    border-color: var(--color-gray-700);
+    color: var(--color-text-primary);
 }
 
-@media (max-width: 767px) {
-    aside.is-sticky.has-full-height {
-        height: auto; /* O cualquier otra altura que desees para este caso */
-        position: static;
-        top: auto;
-    }
+/* For text-only actions like 'Edit' */
+.button-link {
+    background: none;
+    border: none;
+    color: var(--color-text-link);
+    padding: 0;
+}
+.button-link:hover {
+    text-decoration: underline;
 }
 
+/* --------------------------------------------------------------------------
+   6. CORE LAYOUT & COMPONENT CLASSES
+-------------------------------------------------------------------------- */
+.card {
+    background-color: var(--color-background-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border-subtle);
+    padding: var(--spacing-6);
+}
+
+/* Main Layout Structure (Sidebar + Main Content) */
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 @media (min-width: 768px) {
-    aside {
-        width: var(--sidebar-width);
-    }
+    .main-layout { flex-direction: row; gap: 2.5rem; }
 }
 
-aside.is-sticky {
-    position: sticky;
-    top: 1.5rem;
-    align-self: flex-start;
-    margin-top: var(--spacing-4);
+.main-content {
+    flex-grow: 1;
+    min-width: 0; /* Prevents flex items from overflowing */
+    display: flex;
+    flex-direction: column;
+}
+.content-body {
+    flex-grow: 1; /* Pushes action toolbar to the bottom */
+}
+.content-header h2 {
+    font-size: var(--text-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-6);
 }
 
-aside.has-full-height {
-    height: calc(100vh - 4rem); /* Altura máxima - offsets superior/inferior */
-    overflow-y: auto;
-}
-
+/* Sidebar Navigation */
 aside nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem; /* Espacio pequeño entre los elementos */
+    gap: var(--spacing-2);
 }
-
 aside nav a {
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* Espacio entre el icono y el texto */
-    padding: 0.625rem 1rem; /* 10px 16px */
-    border-radius: var(--radius-lg, 0.5rem);
-    text-decoration: none;
-    font-weight: var(--font-weight-medium, 500);
-    color: var(--color-text-secondary, #374151);
-    transition: background-color 150ms, color 150ms;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
 }
-
 aside nav a:hover {
-    background-color: var(--color-gray-100, #f3f4f6);
+    background-color: var(--color-background-subtle);
+    text-decoration: none;
 }
-
 aside nav a.is-active {
-    background-color: var(--color-background-subtle-separator, #eef2ff); /* Un gris/azul muy claro */
-    color: var(--color-text-primary, #111827);
+    background-color: var(--color-primary-100);
+    color: var(--color-primary-600);
+    font-weight: var(--font-weight-semibold);
 }
 
-/* Contenedor para los iconos SVG */
 aside .nav-icon {
     flex-shrink: 0;
     width: 1rem;  /* 16px */
     height: 1rem; /* 16px */
-    /* El color del icono se hereda del color del texto del enlace (<a>) */
     color: currentColor;
 }
 
@@ -285,37 +309,290 @@ aside .nav-icon svg {
     height: 100%;
 }
 
-.select-none {
-    user-select:  none;
+/* Form Sectioning (as seen in demo) */
+.form-section {
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
+}
+.form-group {
+    margin-bottom: var(--spacing-4);
+}
+@media (min-width: 768px) {
+    .form-group {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 1.5rem;
+        align-items: flex-start; /* Use flex-start for multi-line textareas */
+    }
+    .form-group label {
+        text-align: right;
+        margin-bottom: 0;
+        padding-top: var(--spacing-2); /* Align with text inside input */
+    }
 }
 
-/* Popover */
+/* Action Toolbar (for save/reset buttons) */
+.action-toolbar {
+    background-color: var(--color-white);
+    padding: var(--spacing-4);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+    border-top: 1px solid var(--color-border-subtle);
+    box-shadow: 0 -4px 15px -5px hsla(0, 0%, 0%, .05);
+}
+@media (min-width: 768px) {
+    .action-toolbar {
+        position: sticky;
+        bottom: var(--spacing-6);
+        align-self: flex-end; /* Aligns to the end of the flex container */
+        width: auto;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border-subtle);
+        box-shadow: var(--shadow-md);
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   7. NATIVE TABLE DEFAULTS
+-------------------------------------------------------------------------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--spacing-6);
+    text-align: left;
+}
+
+th, td {
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--color-border-subtle);
+    vertical-align: top;
+}
+
+th {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   8. DATA TABLE COMPONENT
+-------------------------------------------------------------------------- */
+.data-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.data-table {
+    min-width: 700px;
+}
+
+.data-table thead th {
+    background-color: var(--color-background-subtle);
+    border-bottom: 2px solid var(--color-border-subtle);
+    white-space: nowrap;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--color-background-subtle);
+}
+
+.data-table tbody td {
+    vertical-align: middle; /* Alinea mejor el contenido con badges y otros elementos */
+}
+
+/* --- Status Badges  --- */
+.status-badge {
+    display: inline-block;
+    padding: var(--spacing-1, 0.25rem) var(--spacing-3, 0.75rem);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-size-sm);
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.status-badge.status-active {
+    background-color: var(--color-green-100);
+    color: var(--color-green-700);
+}
+
+.status-badge.status-inactive {
+    background-color: var(--color-gray-200);
+    color: var(--color-gray-700);
+}
+
+/* --- Colapsable inside Talbes --- */
+.data-table .details-summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--color-text-link);
+    font-weight: var(--font-weight-medium);
+}
+.data-table .details-summary::-webkit-details-marker { display: none; }
+
+.data-table .details-content {
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-4);
+    background-color: var(--color-background-subtle);
+    border-left: 4px solid var(--color-primary-500);
+}
+
+
+/* --------------------------------------------------------------------------
+   9. SUPERCHARGED LISTS (Mobile-Friendly Checkbox & Radio Blocks)
+   VERSION SIMPLIFICADA: No requiere la clase .list-item en el <label>
+   -------------------------------------------------------------------------- */
+
+/* El contenedor principal que activa el estilo de bloque */
+.supercharged-list {
+    display: grid;
+    gap: var(--spacing-3);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* La etiqueta es el bloque clickeable (APUNTA DIRECTAMENTE AL LABEL) */
+.supercharged-list > label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms;
+    flex-wrap: wrap;
+}
+
+.supercharged-list > label:hover {
+    background-color: var(--color-background-subtle);
+    border-color: var(--color-border-default);
+}
+
+/* Ocultamos el input nativo */
+.supercharged-list > label input[type="checkbox"],
+.supercharged-list > label input[type="radio"] {
+    display: none;
+}
+
+/* El icono falso que estilizamos */
+.supercharged-list > label .checkbox-icon-placeholder {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--color-border-default);
+    border-radius: var(--radius-md); /* Cuadrado para checkbox */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 150ms, border-color 150ms;
+    flex-shrink: 0;
+}
+
+/* -- Estilos específicos para Radio Buttons -- */
+.supercharged-list > label input[type="radio"] + .checkbox-icon-placeholder {
+    border-radius: var(--radius-full); /* Los radios son redondos */
+}
+
+/* El estado :checked */
+.supercharged-list > label input[type="checkbox"]:checked + .checkbox-icon-placeholder,
+.supercharged-list > label input[type="radio"]:checked + .checkbox-icon-placeholder {
+    background-color: var(--color-primary-500);
+    border-color: var(--color-primary-500);
+}
+
+/* Dibujamos el "check" o el "punto" */
+.supercharged-list > label input[type="checkbox"]:checked + .checkbox-icon-placeholder::after {
+    content: '✔';
+    color: var(--color-white);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.supercharged-list > label input[type="radio"]:checked + .checkbox-icon-placeholder::after {
+    content: '';
+    display: block;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-white);
+}
+
+/* -- Manejo del campo de texto "Other" -- */
+.supercharged-list > label.has-textfield {
+    align-content: flex-start;
+}
+.supercharged-list > label .list-item-textfield {
+    flex-basis: 100%;
+    margin-top: var(--spacing-2);
+}
+
+/* -- Accesibilidad: Foco visible -- */
+.supercharged-list > label input[type="checkbox"]:focus-visible + .checkbox-icon-placeholder,
+.supercharged-list > label input[type="radio"]:focus-visible + .checkbox-icon-placeholder {
+    box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+/* ==========================================================================
+   MODERN POPOVER STYLES (Mobile-First, Desktop-Optimized)
+   ========================================================================== */
+
 /* Popover Base Styles */
 .app-popover {
+    /* --- Mobile First: Fullscreen by default --- */
+    position: fixed;
+    inset: 0; /* A shorthand for top, right, bottom, left = 0 */
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
     padding: 0;
+    margin: 0;
     border: none;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card-rich); /* Applying rich shadow as per design guide */
-    background-color: var(--color-background-card); /* Card background color */
+    border-radius: 0; /* No border radius on mobile for fullscreen effect */
+    box-shadow: var(--shadow-lg);
+    background-color: var(--color-background-card);
     color: var(--color-text-primary);
-    min-width: 78vw;
-    min-height: 20vh;
-    max-height: 74vh;
-    transform: translateY(0);
-    opacity: 1;
-    transition: transform 0.5s ease-out, opacity 0.4s ease-out;
-    transition-duration: 5s;
+    overflow-y: auto; /* Allow content to scroll if it overflows */
     z-index: 1000;
 }
 
-
-.app-popover[open] {
-    transform: translateY(100vh);
-    opacity: 1;
-    top: auto;
-    left: auto;
+/* Popover backdrop style */
+.app-popover::backdrop {
+    background-color: hsla(0, 0%, 0%, 0.5);
+    backdrop-filter: blur(4px);
 }
 
+/* --- Desktop View: Bottom Half (2/4) Panel --- */
+@media (min-width: 768px) {
+    .app-popover {
+        /* Override mobile fullscreen styles */
+        inset: auto; /* Reset the inset property */
+        top: 50%;    /* Start from the vertical midpoint */
+        bottom: 0;
+        left: 0;
+        right: 0;
+
+        width: 90%;  /* Not full width, but most of it */
+        max-width: 1200px; /* Set a max-width for large screens */
+        height: 50vh; /* Occupies 2/4 of the viewport height */
+        max-height: 50vh;
+
+        margin: 0 auto; /* Center the popover horizontally */
+
+        /* Apply border-radius only to the top corners for a clean look */
+        border-top-left-radius: var(--radius-lg);
+        border-top-right-radius: var(--radius-lg);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+
+        border: 1px solid var(--color-border-subtle);
+    }
+}
+
+/* Shared content styles for both mobile and desktop */
 .popover-content {
     padding: var(--spacing-6);
     display: flex;
@@ -324,466 +601,101 @@ aside .nav-icon svg {
 }
 
 .popover-close-button {
+    /* Position the close button at the top-right of the content area */
     align-self: flex-end;
 }
 
-
-@media (max-width: 767px) {
-    .app-popover {
-        bottom: 0; /* `anchors the popover to the very bottom of the screen. */
-        left: 50%; /* positions the left edge at the horizontal center. */
-        transform: translateX(-50%) translateY(0);
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-        min-width: 100vw;
-        margin-bottom: 0;
-    }
-
-    .app-popover[open] {
-        transform: translateX(-50%) translateY(100vh);
-    }
-}
-
-@media (min-width: 768px) {
-    .app-popover {
-        top: auto;
-        left: auto;
-        bottom: var(--spacing-6);
-        right: var(--spacing-6);
-        transform: translateY(0);
-        opacity: 1;
-    }
-    .app-popover[open] {
-        transform: translateY(100vh);
-        opacity: 1;
-    }
-}
-/* END Popover */
-
-/* Forms */
-.form-section {
-    margin-bottom: 2.5rem;
-}
-
-.form-section legend,
-.form-section h3 {
-    font-size: 1.125rem;
-    font-weight: 500;
-    margin-bottom: 1.5rem;
-}
-
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-
-@media (min-width: 768px) {
-    .form-group {
-        display: grid;
-        grid-template-columns: 160px 1fr;
-        gap: 1.5rem;
-        align-items: center;
-    }
-    .form-group label {
-        text-align: right;
-        margin-bottom: 0;
-    }
-}
-
-.inline-group-container {
-    display: grid;
-    gap: 1.5rem; /* Espacio entre los fieldsets */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Por defecto, adapta entre 1 y 2 columnas */
-    overflow-x: auto; /* Permite scroll horizontal si los elementos no caben */
-    padding-bottom: 1rem; /* Espacio para el scrollbar */
-    margin-bottom: -1rem; /* Compensa el padding-bottom para que no añada espacio extra al diseño */
-    -webkit-overflow-scrolling: touch; /* Mejora el scroll en iOS */
-}
-
-/* Regla para 2 columnas en pantallas pequeñas (ej. tablets en vertical) */
-@media (min-width: 480px) and (max-width: 991px) { /* Ejemplo: entre sm y lg */
-    .inline-group-container {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Mantiene auto-fit con minmax(200px, 1fr) para máximo 2 columnas */
-        /* Si solo quieres forzar 2 columnas, puedes usar: grid-template-columns: repeat(2, 1fr); */
-    }
-}
-
-/* Regla para 3 columnas en desktop */
-@media (min-width: 992px) { /* Ejemplo: a partir de 992px para desktop */
-    .inline-group-container {
-        grid-template-columns: repeat(3, 1fr); /* Fuerza 3 columnas de igual ancho */
-    }
-}
-
-
-.inline-group-container {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    margin-bottom: -1rem;
-    -webkit-overflow-scrolling: touch;
-}
-@media (min-width: 992px) {
-    .inline-group-container {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-.inline-group legend {
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    padding: 0 0.25rem;
-}
-
-.inline-group input,
-.inline-group select,
-.inline-group textarea {
-    width: 100%;
-}
-
-
-a, .button-link {
-    background: none;
-    border: none;
-    color: var(--color-primary-500, #3b82f6);
-    font-weight: 500;
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: var(--radius-md, 0.375rem);
-    transition: background-color 150ms;
-    user-select: none;
-}
-
-a.button-link:hover {
-    background-color: var(--color-gray-100, #f3f4f6);
-}
-
-
-/* End Forms */
-
-/* MAIN LAYOUT CONTENT LAYOUT */
-
-.main-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-    .main-layout {
-        flex-direction: row;
-        gap: 2.5rem;
-    }
-}
-
-.main-content {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    min-width: 0;
-}
-
-.content-body {
-    flex-grow: 1; /* Empuja el action-toolbar hacia el final */
-}
-
-.content-header h2 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-}
-
 /*
-  Status Badges
- */
-.status-badge {
-    padding: 0.25rem 0.625rem;
-    border-radius: var(--radius-full);
+   ACCESSIBLE NAVIGATION & TABS STYLING
+   This styles navigation based on ARIA attributes instead of classes.
+*/
+
+/* Example for a Tab list */
+[role="tablist"] {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+[role="tab"] {
+    /* Base styles from our button/link defaults */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
     font-weight: var(--font-weight-medium);
-    font-size: 0.875rem;
-    white-space: nowrap; /* Ensures the badge text doesn't wrap */
-}
-
-.status-badge.status-active {
-    background-color: #dcfce7; /* Light Green */
-    color: #166534; /* Dark Green */
-}
-
-.status-badge.status-inactive {
-    background-color: var(--color-gray-200);
-    color: var(--color-gray-700);
-}
-
-/* Supercharged List / Checkbox Styling */
-.supercharged-list {
-    display: grid;
-    gap: var(--spacing-3);
-    /* Móvil-Primero: Por defecto, es una sola columna.
-      En pantallas más anchas (>= 500px), creará columnas de un mínimo de 220px.
-      'auto-fit' hará que se ajusten para llenar el espacio, creando un grid fluido.
-    */
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.supercharged-list .list-item {
-    display: flex !important;
-    align-items: center;
-    gap: var(--spacing-3);
-    padding: var(--spacing-3);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-subtle);
+    color: var(--color-text-secondary);
+    background-color: transparent;
+    border: none;
     cursor: pointer;
-    transition: background-color 150ms, border-color 150ms;
-    /* Para el caso "Other:" */
-    flex-wrap: wrap;
+    transition: background-color 150ms, color 150ms;
 }
 
-.supercharged-list .list-item:hover {
+[role="tab"]:hover {
     background-color: var(--color-background-subtle);
-}
-
-.supercharged-list .list-item input[type="checkbox"],
-.supercharged-list .list-item input[type="radio"]{
-    display: none; /* Ocultamos el checkbox nativo */
-}
-
-.supercharged-list .list-item .checkbox-icon-placeholder {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid var(--color-border-default);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 150ms, border-color 150ms;
-    flex-shrink: 0;
-}
-
-/* Estilo para el checkmark (la palomita) */
-.supercharged-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder::after,
-.supercharged-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder::after{
-    content: '✔';
-    color: var(--color-white);
-    font-size: 1rem;
-    line-height: 1;
-}
-
-/* Apariencia cuando está seleccionado */
-.supercharged-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder ,
-.supercharged-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder {
-    background-color: var(--color-primary-500);
-    border-color: var(--color-primary-500);
-}
-
-/* ---- FIX PARA EL CAMPO "OTHER" ---- */
-.supercharged-list .list-item.has-textfield {
-    align-content: flex-start; /* Alinea las líneas al inicio */
-}
-
-.supercharged-list .list-item-textfield {
-    flex-basis: 100%;
-    margin-top: var(--spacing-2);
-    margin-left: 0;
-}
-
-/* Estado de foco para accesibilidad */
-.supercharged-list .list-item input[type="checkbox"]:focus-visible + .checkbox-icon-placeholder {
-    box-shadow: 0 0 0 3px var(--color-primary-500-oklch);
-}
-
-
-@media (max-width: 767px) {
-    .mobile-text-center {
-        text-align: center;
-    }
-
-    .mobile-justify-center {
-        justify-content: center;
-    }
-}
-
-/* Data Tables */
-
-/*
- * Bintelx Data Table Specific Styles
- * Scoped to .data-table for better isolation.
- */
-
-.data-table-wrapper {
-    overflow-x: auto; /* This enables horizontal scroll on small screens */
-    width: 100%;
-    scroll-timeline-name: --table-horizontal-scroll;
-    scroll-timeline-axis: inline; /* Queremos que reaccione al scroll horizontal */
-}
-
-.data-table {
-    width: 100%;
-    min-width: 700px; /* NEW: Prevents table from crushing on mobile. Scroll will activate below this width. */
-    border-collapse: collapse;
     color: var(--color-text-primary);
 }
 
-/* --- Table Headers --- */
-.data-table thead th {
-    background-color: var(--color-background-subtle);
-    text-align: left;
-    padding: var(--spacing-3) var(--spacing-4);
-    border-bottom: 2px solid var(--color-border-subtle);
-    white-space: nowrap;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-secondary);
-}
-
-/* --- Table Body & Rows --- */
-.data-table tbody tr {
-    border-bottom: 1px solid var(--color-border-subtle);
-    transition: background-color 150ms;
-}
-
-.data-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.data-table tbody tr:hover {
-    background-color: var(--color-background-subtle);
-}
-
-.data-table tbody td {
-    padding: var(--spacing-3) var(--spacing-4);
-    vertical-align: middle;
-}
-
-/* --- Collapsible Details Section --- */
-.data-table .collapsible-details {
-    position: relative;
-}
-
-.data-table .details-summary {
-    cursor: pointer;
-    list-style: none; /* Hides the default marker */
-    color: var(--color-primary-500);
-    font-weight: var(--font-weight-medium);
-}
-
-.data-table .details-summary::-webkit-details-marker {
-    display: none; /* Hides the default marker in Chrome/Safari */
-}
-
-.data-table .collapsible-details[open] > .details-summary {
+/* Style the active tab using the ARIA attribute */
+[role="tab"][aria-selected="true"] {
+    background-color: var(--color-primary-100);
     color: var(--color-primary-600);
-}
-
-.data-table .details-content {
-    margin-top: var(--spacing-3);
-    padding: var(--spacing-4);
-    background-color: var(--color-background-subtle);
-    border-left: 4px solid var(--color-primary-500); /* Accent border */
-    box-shadow: none;
-}
-
-.data-table .details-content h3 {
-    margin-top: 0;
-    font-size: var(--text-lg);
     font-weight: var(--font-weight-semibold);
-    color: var(--color-primary-500);
 }
 
-.data-table .feature-list {
-    list-style-type: none;
-    padding-left: 0;
+/* Styling for helper text directly following a form input */
+input + p,
+textarea + p,
+select + p,
+input + small,
+textarea + small,
+select + small {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-size-sm);
+    margin-top: var(--spacing-2);
+    /* Reset bottom margin if it's the last element in a group */
+    margin-bottom: 0;
 }
-
-.data-table .feature-list li {
-    padding-left: 1.5rem;
-    position: relative;
-    margin-bottom: var(--spacing-2);
-}
-
-.data-table .feature-list li::before {
-    content: '✅'; /* Meaningful icon instead of a bullet */
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-
-.data-table .details-footer {
-    margin-top: var(--spacing-4);
-    text-align: right;
-}
-
-/* --- Table Footer --- */
-.data-table tfoot td {
-    background-color: var(--color-background-subtle);
-    padding: var(--spacing-3) var(--spacing-4);
-    text-align: center;
-    font-size: 0.9em;
-    color: var(--color-text-secondary);
-}
-
-
 
 /*
- * ===================================================================
- * Data Table Feature Row (Versión Final con control JS)
- * ===================================================================
+ * The "Flow" utility class applies consistent vertical rhythm
+ * to direct children elements using the "lobotomized owl" selector.
  */
-
-/* 1. Contenedor de la fila */
-.feature-row-container td {
-    padding: 0;
-    height: 250px;
-    position: relative; /* Contexto para el fondo */
-    overflow: hidden;
+.flow > * + * {
+    margin-top: var(--spacing-6, 1.5rem);
 }
 
-/* 2. Wrapper del contenido. Ya no es 'sticky' */
-.feature-row-container .feature-content-wrapper {
-    /* JS controlará su posición con 'transform' */
-    width: 88vw;
-    max-width: 900px;
-    height: 100%;
-
-    /* Centra el contenido de texto e hijos */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-
-    /* Importante para que el JS lo mueva suavemente */
-    position: relative;
-    margin: 0 auto; /* Lo centra en el 'td' como punto de partida */
+/* Supercharged default styles for unordered and ordered lists */
+ul, ol {
+    padding-left: var(--spacing-6); /* CORRECTED */
+    margin: var(--spacing-4) 0; /* CORRECTED */
+    color: var(--color-text-secondary); /* CORRECTED */
 }
 
-/* 3. El fondo que se moverá con efecto parallax */
-.feature-row-container .parallax-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-
-    background-image: var(--parallax-bg-image);
-    background-size: cover;
-    background-repeat: no-repeat;
-
-    /* La posición X se controla por la variable JS, con 50% como valor inicial */
-    background-position: var(--bg-scroll-percentage, 50%) center;
+ul li::marker {
+    color: var(--color-primary-500); /* Makes the bullet point use the primary brand color */
 }
 
-/* 4. Contenido del usuario que va por encima */
-.feature-row-container .user-content-on-top {
-    position: relative;
-    z-index: 2;
-    color: white;
-    padding: var(--spacing-4);
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: var(--radius-lg);
+li {
+    padding-left: var(--spacing-2);
+}
+
+/* Consistent spacing between list items */
+li + li {
+    margin-top: var(--spacing-4);
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+/*
+ * Use this class to highlight the most important piece of data
+ * within a component, like a price, a percentage, or a key metric.
+ */
+.feature-data {
+    color: var(--color-text-primary);
+    font-size: var(--text-size-4xl); /* The largest font size for key data */
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1; /* Tighter line height for large text */
 }
