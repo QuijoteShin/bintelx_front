@@ -332,7 +332,7 @@ aside .nav-icon svg {
 @media (min-width: 768px) {
     .form-group {
         display: grid;
-        grid-template-columns: 480px 1fr;
+        grid-template-columns: 29vw 1fr;
         gap: 1.5rem;
         align-items: flex-start; /* Use flex-start for multi-line textareas */
     }
@@ -498,13 +498,13 @@ th {
 }
 
 .supercharged-list > label input[type="radio"] + .checkbox-icon-placeholder {
-    border-radius: var(--radius-full); /* Los radios son redondos */
+    border-radius: var(--radius-full); 
 }
 
 /* status :checked */
 .supercharged-list > label input[type="checkbox"]:checked + .checkbox-icon-placeholder,
 .supercharged-list > label input[type="radio"]:checked + .checkbox-icon-placeholder {
-    background-color: var(--color-brand-primary--color-brand-primary);
+    background-color: var(--color-brand-primary);
     border-color: var(--color-brand-primary);
 }
 
@@ -618,7 +618,7 @@ th {
 /* Example for a Tab list */
 [role="tablist"] {
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--spacing-1);
 }
 
 [role="tab"] {
@@ -687,11 +687,9 @@ ul li::marker {
 
 li {
     padding-left: var(--spacing-2);
-}
-
-/* Consistent spacing between list items */
-li + li {
     margin-top: var(--spacing-4);
+}
+li + li {
 }
 
 /* ==========================================================================
