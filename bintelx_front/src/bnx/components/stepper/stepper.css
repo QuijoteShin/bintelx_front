@@ -1,6 +1,7 @@
 /* src/bnx/components/stepper/stepper.css */
 .stepper-step {
-    background-color: var(--color-background-subtle, white);
+    /* background-color: var(--color-background-subtle, white);
+     */
     opacity: 1;
     transform: translateX(0); /* Default resting state */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease-in-out;

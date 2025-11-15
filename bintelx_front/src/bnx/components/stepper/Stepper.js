@@ -2,6 +2,37 @@
 import './stepper.css';
 import template from './stepper.tpls';
 import {loadContentIntoElement} from "../../loader"; // Synchronous import via Webpack's raw-loader
+import { createComponentStyles } from '../../styles/globalStyles.js';
+
+// Component-specific styles
+const stepperStyles = `
+.stepper-step {
+    opacity: 1;
+    transform: translateX(0);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease-in-out;
+    visibility: hidden;
+}
+
+.stepper-step.visible {
+    visibility: visible;
+}
+
+.stepper-step.slide-from-right {
+    transform: translateX(100%);
+}
+.stepper-step.slide-from-left {
+    transform: translateX(-100%);
+}
+
+.stepper-step.slide-to-left {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+.stepper-step.slide-to-right {
+    transform: translateX(100%);
+    opacity: 0;
+}
+`;
 
 class Stepper extends HTMLElement {
     constructor() {
@@ -9,6 +40,8 @@ class Stepper extends HTMLElement {
         this._useShadow = this.hasAttribute('use-shadow');
         if (this._useShadow) {
             this._renderRoot = this.attachShadow({ mode: 'open' });
+            // Adopt global styles + component-specific styles
+            this._renderRoot.adoptedStyleSheets = createComponentStyles(stepperStyles);
         } else {
             this._renderRoot = this; // Usar el propio elemento (Light DOM)
         }
@@ -28,14 +61,6 @@ class Stepper extends HTMLElement {
         // Assign a unique ID and prefix for this instance.
         this.id = this.id || `bnx-stepper-${Math.random().toString(36).substr(2, 9)}`;
         this._prefix = this.getAttribute('prefix') || this.id;
-
-
-        // Add the component-specific styles to the shadow DOM.
-        const styleSheet = document.createElement('link');
-        styleSheet.setAttribute('rel', 'stylesheet');
-        // NOTE: The path must be absolute from the project root for Webpack Dev Server.
-        // styleSheet.setAttribute('href', './src/bnx/components/stepper/stepper.css');
-        this._renderRoot.appendChild(styleSheet);
 
         console.log(`Stepper "${this.id}" connected and ready.`);
         this._resolveReady(); // Signal that the component is fully initialized.
