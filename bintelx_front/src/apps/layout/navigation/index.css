@@ -3,6 +3,11 @@
 .main-navigation {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    background-color: var(--color-background-card);
+    border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .nav-list {
@@ -11,10 +16,13 @@
     padding: 0;
     display: flex;
     gap: var(--spacing-2);
+    flex-wrap: wrap;
 }
 
 .nav-link {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
     padding: var(--spacing-2) var(--spacing-4);
     border-radius: var(--radius-md);
     text-decoration: none;
@@ -26,10 +34,80 @@
 .nav-link:hover {
     background-color: var(--color-gray-100);
     color: var(--color-primary-500);
+    text-decoration: none;
 }
 
-/* leav room for anchor states handles via js */
+/* leave room for anchor states handled via js */
 .nav-link.active {
     background-color: var(--color-primary-500);
     color: var(--color-white);
+}
+
+/* Nav Actions (Profile + Logout) */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-left: auto;
+}
+
+.nav-profile {
+    /* Uses nav-link styles */
+}
+
+/* Logout Button */
+.nav-logout-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--text-size-base);
+    font-family: inherit;
+    background-color: transparent;
+    color: var(--color-red);
+    border: 1px solid var(--color-red);
+    cursor: pointer;
+    transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+
+.nav-logout-button:hover {
+    background-color: var(--color-red);
+    color: var(--color-white);
+    border-color: var(--color-red);
+}
+
+.nav-logout-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-navigation {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-3);
+    }
+
+    .nav-list {
+        justify-content: center;
+    }
+
+    .nav-actions {
+        margin-left: 0;
+        justify-content: center;
+    }
+
+    .nav-logout-button span,
+    .nav-profile span {
+        display: none;
+    }
+
+    .nav-logout-button,
+    .nav-profile {
+        padding: var(--spacing-2);
+        justify-content: center;
+    }
 }
