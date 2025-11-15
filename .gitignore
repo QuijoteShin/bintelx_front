@@ -1,2 +1,12 @@
 .idea/
-bintelx_front/src/apps/_*
+# bintelx_front/src/apps/_*
+
+# Environment variables
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/

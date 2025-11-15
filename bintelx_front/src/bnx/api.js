@@ -11,7 +11,10 @@ let mockApiHandler = null;
  * @returns {Promise<any>}
  */
 async function request(endpoint, options = {}) {
-  const url = `${config.api.baseUrl}${endpoint}`;
+  // Support both relative and absolute URLs
+  const url = endpoint.startsWith('http://') || endpoint.startsWith('https://')
+    ? endpoint
+    : `${config.api.baseUrl}${endpoint}`;
 
   // moved inside to prevent force async all
   if(MODE_IN === 'development' && mockApiHandler === null) {

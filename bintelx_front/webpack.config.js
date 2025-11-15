@@ -4,6 +4,39 @@ const fs = require('fs');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+/**
+ * Loads environment variables from .env file
+ */
+function loadEnv() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) {
+    return {};
+  }
+
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  const envVars = {};
+
+  envContent.split('\n').forEach(line => {
+    line = line.trim();
+    // Skip empty lines and comments
+    if (!line || line.startsWith('#')) return;
+
+    const [key, ...valueParts] = line.split('=');
+    if (key && valueParts.length > 0) {
+      let value = valueParts.join('=').trim();
+      // Remove quotes if present
+      value = value.replace(/^["']|["']$/g, '');
+      envVars[key.trim()] = value;
+    }
+  });
+
+  return envVars;
+}
+
+const env = loadEnv();
+console.log('[webpack] Loaded .env variables:', env);
 
 /**
 * Scans the /src/apps directory to automatically generate a route map
@@ -55,9 +88,9 @@ const getEntryPoints = (env) => {
 
 const dynamicRoutes = generateRoutes();
 
-module.exports = (env, argv) => {
+module.exports = (envArgs, argv) => {
   const isProduction = argv.mode === 'production';
-  const entryPoints = getEntryPoints(env);
+  const entryPoints = getEntryPoints(envArgs);
 
   return {
     mode: isProduction ? 'production' : 'development',
@@ -65,27 +98,48 @@ module.exports = (env, argv) => {
     output: {
       filename: '[name].[contenthash].js',
       path: path.resolve(__dirname, 'dist'),
-      publicPath: '/',
+      publicPath: env.APP_PUBLIC_PATH,
     },
-    devtool: isProduction ? false : 'inline-source-map',
+    devtool: isProduction ? env.APP_PROD_SOURCE_MAP : env.APP_DEV_SOURCE_MAP,
     devServer: {
       static: './dist',
       hot: true,
       historyApiFallback: true,
-      port: 8080,
-      host: 'localhost',
+      port: parseInt(env.APP_PORT),
       allowedHosts: [
-        '.dev.local'
+        `.${env.APP_HOST}`
       ],
+      open: {
+        context: ['/'],
+        target: env.APP_OPEN_URL,
+      },
     },
     plugins: [
       new CleanWebpackPlugin(),
       new HtmlWebpackPlugin({
         template: './public/index.html',
       }),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: 'public/global.css',
+            to: 'global.css',
+          },
+        ],
+      }),
       new webpack.DefinePlugin({
         __MODE_IN__: JSON.stringify(argv.mode),
         __ROUTES__: JSON.stringify(dynamicRoutes),
+        __API_BASE_URL__: JSON.stringify(env.API_BASE_URL),
+        __API_TIMEOUT__: JSON.stringify(parseInt(env.API_TIMEOUT)),
+        __AUTH_LOGIN_ENDPOINT__: JSON.stringify(env.AUTH_LOGIN_ENDPOINT),
+        __AUTH_VALIDATE_ENDPOINT__: JSON.stringify(env.AUTH_VALIDATE_ENDPOINT),
+        __AUTH_REPORT_ENDPOINT__: JSON.stringify(env.AUTH_REPORT_ENDPOINT),
+      }),
+      // Ignore non-module files (.md, .txt, etc.) in dynamic import contexts
+      new webpack.IgnorePlugin({
+        resourceRegExp: /\.(md|txt|LICENSE|README)$/,
+        contextRegExp: /src[\/\\]apps/,
       }),
     ],
     module: {
