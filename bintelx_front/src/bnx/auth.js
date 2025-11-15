@@ -58,7 +58,9 @@ function handleSuccessfulLogin(token) {
         // 3. Simply hide the overlay. This restores the previous DOM state,
         // including the text the user was typing in the form
         hideLoginOverlay();
-        devlog('Overlay removed. App state is preserved.');
+        devlog('Overlay removed. Reloading the application.');
+        // 4. Reload the page to refresh the application state
+        window.location.reload();
     } else {
         alert("Login failed. Please check your credentials.");
     }
