@@ -130,7 +130,8 @@ async function validateTokenAPI(token) {
     if (!token) return false;
     try {
         const response = await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token });
-        return !!(response && response.status === 200 && response.d && response.d.success); // true|false
+        // Accept 2xx status codes (200-299)
+        return !!(response && response.status >= 200 && response.status < 300 && response.d && response.d.success); // true|false
     } catch (error) {
         removeCookie(config.AUTH_TOKEN_NAME);
         return false;
@@ -164,6 +165,59 @@ async function validateAndShowOverlayIfNeeded() {
         return false;
     }
 }
+
+/**
+ * Request a token from the API using username and password
+ * This centralizes the token request logic for both login and registration flows
+ * @param {string} username - The username
+ * @param {string} password - The password
+ * @returns {Promise<string|null>} The token if successful, null otherwise
+ */
+async function requestToken(username, password) {
+    devlog(`Requesting token for user: ${username}`);
+
+    try {
+        const response = await api.post(config.AUTH_LOGIN_ENDPOINT, { username, password });
+
+        // Accept 2xx status codes (200-299)
+        if (response && response.status >= 200 && response.status < 300 && response.d && response.d.token) {
+            devlog('Token obtained successfully');
+            return response.d.token;
+        } else {
+            devlog('Token request failed: Invalid response structure or no token');
+            console.log('Token request response:', response);
+            return null;
+        }
+    } catch (error) {
+        console.error('Token request failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Logout function - Clears session and shows login overlay
+ * Can be called from any part of the application
+ */
+function logout() {
+    devlog('User logging out. Clearing session...');
+
+    // 1. Stop the session monitor
+    stopSessionMonitor();
+
+    // 2. Clear the authentication token cookie
+    removeCookie(config.AUTH_TOKEN_NAME);
+
+    // 3. Clear session storage
+    sessionStorage.removeItem(SESSION_TIMESTAMP_KEY);
+
+    // 4. Show the login overlay
+    showLoginOverlay();
+
+    devlog('Logout complete. User must re-authenticate.');
+}
+
 export const authFlow = {
     validate: validateAndShowOverlayIfNeeded,
+    logout: logout,
+    requestToken: requestToken,
 };
