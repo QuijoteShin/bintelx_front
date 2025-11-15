@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 
+# Generated files
+public/global.css
+
 .idea/
 
 DEV_LOG.md

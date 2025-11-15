@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { initRouter } from './router.js';
 import { loadComponent } from './loader.js';
+import '../assets/css/global.css'; // Import global CSS
 
 document.title = config.appName;
 // Initialize the application router

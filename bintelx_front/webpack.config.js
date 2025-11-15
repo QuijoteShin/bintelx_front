@@ -5,6 +5,7 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 /**
  * Loads environment variables from .env file
@@ -119,13 +120,8 @@ module.exports = (envArgs, argv) => {
       new HtmlWebpackPlugin({
         template: './public/index.html',
       }),
-      new CopyWebpackPlugin({
-        patterns: [
-          {
-            from: 'public/global.css',
-            to: 'global.css',
-          },
-        ],
+      new MiniCssExtractPlugin({
+        filename: 'global.[contenthash].css',
       }),
       new webpack.DefinePlugin({
         __MODE_IN__: JSON.stringify(argv.mode),
@@ -155,7 +151,7 @@ module.exports = (envArgs, argv) => {
         },
         {
           test: /\.css$/,
-          use: ['style-loader', 'css-loader'],
+          use: [MiniCssExtractPlugin.loader, 'css-loader'],
         },
       ],
     },
