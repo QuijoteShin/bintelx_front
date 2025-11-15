@@ -1,0 +1,47 @@
+<div>
+  <h4>Paso 2: Crear Perfil (Opcional)</h4>
+  <p style="color: var(--color-text-secondary); font-size: 0.9em; margin-bottom: 1rem;">
+    Completa tu perfil para una mejor experiencia. Puedes omitir este paso y completarlo m\u00e1s tarde.
+  </p>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="profile-name">Nombre del perfil:</label>
+    <input type="text" id="profile-name" name="profileName" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;" placeholder="Mi Perfil">
+    <div class="field_error text-error" id="profileNameError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="entity-name">Nombre completo:</label>
+    <input type="text" id="entity-name" name="entityName" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;" placeholder="Juan P\u00e9rez">
+    <div class="field_error text-error" id="entityNameError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="entity-type">Tipo de entidad:</label>
+    <select id="entity-type" name="entityType" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+      <option value="person">Persona</option>
+      <option value="company">Empresa</option>
+    </select>
+    <div class="field_error text-error" id="entityTypeError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="national-id">RUT / Identificaci\u00f3n Nacional:</label>
+    <input type="text" id="national-id" name="nationalId" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;" placeholder="12345678-9">
+    <div class="field_error text-error" id="nationalIdError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="national-isocode">C\u00f3digo ISO del pa\u00eds:</label>
+    <select id="national-isocode" name="nationalIsocode" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+      <option value="CL">Chile (CL)</option>
+      <option value="AR">Argentina (AR)</option>
+      <option value="PE">Per\u00fa (PE)</option>
+      <option value="CO">Colombia (CO)</option>
+      <option value="MX">M\u00e9xico (MX)</option>
+      <option value="US">Estados Unidos (US)</option>
+      <option value="ES">Espa\u00f1a (ES)</option>
+    </select>
+    <div class="field_error text-error" id="nationalIsocodeError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+</div>

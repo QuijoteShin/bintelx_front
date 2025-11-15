@@ -1,0 +1,22 @@
+<!-- bintelx_front/src/apps/_auth/register/index.tpls -->
+<div class="card" style="max-width: 500px; margin: 2rem auto;">
+    <div class="card-content">
+        <h3 class="card-title">Registro de Usuario</h3>
+        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">Crea tu cuenta en 2 simples pasos</p>
+
+        <bnx-stepper id="register-stepper" prefix="register"></bnx-stepper>
+
+        <div id="register-result" style="margin-top: 1rem;"></div>
+    </div>
+    <div class="card-actions" style="justify-content: space-between;">
+        <span id="step-indicator" style="font-size: 0.9em; color: var(--color-text-secondary);"></span>
+        <div>
+            <button id="prev-btn" class="button">Atr\u00e1s</button>
+            <button id="skip-btn" class="button" style="display: none;">Omitir</button>
+            <button id="next-btn" class="button-primary">Siguiente</button>
+        </div>
+    </div>
+    <div class="card-footer" style="text-align: center; margin-top: 1rem;">
+        <a href="#" id="back-to-login" style="font-size: 0.9em;">Ya tengo una cuenta - Iniciar sesi\u00f3n</a>
+    </div>
+</div>

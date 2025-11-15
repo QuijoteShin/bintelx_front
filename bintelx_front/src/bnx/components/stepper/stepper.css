@@ -6,10 +6,12 @@
     transform: translateX(0); /* Default resting state */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease-in-out;
     visibility: hidden; /* Controlled by the 'visible' class */
+    display: none;
 }
 
 .stepper-step.visible {
     visibility: visible;
+    display: inherit;
 }
 
 /* State before a step slides IN */

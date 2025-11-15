@@ -1,0 +1,25 @@
+<div>
+  <h4>Paso 1: Crear Cuenta</h4>
+  <p style="color: var(--color-text-secondary); font-size: 0.9em; margin-bottom: 1rem;">
+    Ingresa tus credenciales para crear una nueva cuenta
+  </p>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="reg-username">Nombre de usuario:</label>
+    <input type="text" id="reg-username" name="username" required autocomplete="username" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+    <div class="field_error text-error" id="usernameError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="reg-password">Contrase\u00f1a:</label>
+    <input type="password" id="reg-password" name="password" required autocomplete="new-password" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+    <div class="field_error text-error" id="passwordError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+    <small style="color: var(--color-text-secondary); font-size: 0.85em;">M\u00ednimo 6 caracteres</small>
+  </div>
+
+  <div class="form-group" style="margin-bottom: 1rem;">
+    <label for="reg-password-confirm">Confirmar contrase\u00f1a:</label>
+    <input type="password" id="reg-password-confirm" name="password-confirm" required autocomplete="new-password" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+    <div class="field_error text-error" id="passwordConfirmError" style="font-size: 0.9em; margin-top: 0.25rem;"></div>
+  </div>
+</div>

@@ -1,13 +1,15 @@
 // bnx/apps/_auth/login/index.js
 import { devlog } from '../../../bnx/utils.js';
-import { api } from '../../../bnx/api.js';
+import { authFlow } from '../../../bnx/auth.js';
 import { config } from '../../../config.js';
+import { loadContentIntoElement } from '../../../bnx/loader.js';
 
 export default function(container, data) {
   const form = container.querySelector('#login-form');
   if (!form) return;
 
   const submitButton = form.querySelector('button[type="submit"]');
+  const showRegisterLink = container.querySelector('#show-register');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -22,30 +24,54 @@ export default function(container, data) {
     }
 
     try {
-      // Llamar al endpoint de login de la API con las credenciales
-      const response = await api.post(config.AUTH_LOGIN_ENDPOINT, { username, password });
+      // Use centralized token request method
+      const token = await authFlow.requestToken(username, password);
 
-      if (response && response.status === 200 && response.d && response.d.token) {
-        devlog('API login successful. Passing token to auth manager.');
+      if (token) {
+        devlog('Login successful. Passing token to auth manager.');
         if (data && typeof data.onSuccess === 'function') {
-          data.onSuccess(response.d.token);
+          data.onSuccess(token);
         }
       } else {
-        const errorMessage = response?.message || 'Invalid response from server.';
-        console.error(`Login failed: ${errorMessage}`);
+        console.error('Login failed: No token received');
+        alert('Login failed: Invalid credentials or server error.');
         if(submitButton) {
           submitButton.disabled = false;
           submitButton.textContent = 'Login';
         }
       }
     } catch (error) {
-      console.error('Login API call failed:', error);
-      const errorMessage = error.response?.d?.message || error.message;
-      alert(`Login failed: ${errorMessage}`);
+      console.error('Login failed:', error);
+      alert(`Login failed: ${error.message}`);
       if(submitButton) {
         submitButton.disabled = false;
         submitButton.textContent = 'Login';
       }
     }
   });
+
+  // Handle register link click
+  if (showRegisterLink) {
+    showRegisterLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      devlog('Switching to registration form...');
+
+      // Clear the container and load the registration form
+      container.innerHTML = '';
+      loadContentIntoElement(
+        {
+          templatePath: '_auth/register/index.tpls',
+          scriptPath: '_auth/register/index.js'
+        },
+        container,
+        {
+          onSuccess: data?.onSuccess,
+          onCancel: () => {
+            // When user cancels registration, reload to show login again
+            window.location.reload();
+          }
+        }
+      );
+    });
+  }
 }
