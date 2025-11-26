@@ -108,9 +108,11 @@ export default async function(container, data) {
                 console.log('[DEBUG] Has accountId?', !!registrationResult?.accountId);
 
                 if (registrationResult && registrationResult.accountId) {
-                    console.log('[DEBUG] Storing accountId and token, then calling next()');
-                    // Store the accountId and token at the root level for step 2 to access
+                    console.log('[DEBUG] Storing accountId, profileId, entityId and token, then calling next()');
+                    // Store the accountId, profileId, entityId and token at the root level for step 2 to access
                     stepper._stepData.accountId = registrationResult.accountId;
+                    stepper._stepData.profileId = registrationResult.profileId;
+                    stepper._stepData.entityId = registrationResult.entityId;
                     stepper._stepData.token = registrationResult.token;
                     stepper.next();
                 } else {
@@ -130,12 +132,14 @@ export default async function(container, data) {
             try {
                 console.log('[DEBUG] Step 2: Submitting profile...');
                 nextBtn.disabled = true;
-                nextBtn.textContent = 'Creando perfil...';
+                nextBtn.textContent = 'Guardando perfil...';
 
                 const currentStepId = stepper._steps[1].id;
                 const profileData = {
                     ...(stepper._stepData[currentStepId] || {}),
-                    accountId: stepper._stepData.accountId
+                    accountId: stepper._stepData.accountId,
+                    profileId: stepper._stepData.profileId,
+                    entityId: stepper._stepData.entityId
                 };
 
                 console.log('[DEBUG] Profile data to submit:', profileData);

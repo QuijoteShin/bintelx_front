@@ -130,6 +130,16 @@ export default function(stepElement, data) {
 
         console.log('Account created with ID:', accountId);
 
+        // Extract profileId and entityId from response (automatically created by backend)
+        const profileId = actualData.profileId;
+        const entityId = actualData.entityId;
+
+        if (!profileId || !entityId) {
+          console.warn('Profile or Entity ID not received from server. Profile update may fail.');
+        } else {
+          console.log('Profile and Entity created:', { profileId, entityId });
+        }
+
         // Step 2: Request token using centralized method
         console.log('Requesting authentication token...');
         const token = await authFlow.requestToken(
@@ -145,6 +155,8 @@ export default function(stepElement, data) {
 
         return {
           accountId: accountId,
+          profileId: profileId,
+          entityId: entityId,
           token: token
         };
       } else {

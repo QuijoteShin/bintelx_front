@@ -105,14 +105,27 @@ export default function(stepElement, data) {
         throw new Error('No se encontr\u00f3 el ID de cuenta. Por favor, int\u00e9ntalo de nuevo.');
       }
 
-      const response = await api.post('/_demo/profile/create', {
+      // Build request payload - include profileId and entityId if they exist (for updating existing profile)
+      const payload = {
         accountId: profileData.accountId,
         profileName: profileData.profileName,
         entityName: profileData.entityName,
         entityType: profileData.entityType,
         nationalId: profileData.nationalId,
         nationalIsocode: profileData.nationalIsocode
-      });
+      };
+
+      // Include profileId and entityId if they were created during registration
+      if (profileData.profileId) {
+        payload.profileId = profileData.profileId;
+        console.log('Updating existing profile:', profileData.profileId);
+      }
+      if (profileData.entityId) {
+        payload.entityId = profileData.entityId;
+        console.log('Updating existing entity:', profileData.entityId);
+      }
+
+      const response = await api.post('/_demo/profile/create', payload);
 
       // Accept 2xx status codes (200-299)
       if (response && response.status >= 200 && response.status < 300 && response.d) {

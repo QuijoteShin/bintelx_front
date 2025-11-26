@@ -1,7 +1,7 @@
 <div>
-  <h4>Paso 2: Crear Perfil (Opcional)</h4>
+  <h4>Paso 2: Completa tu Perfil (Opcional)</h4>
   <p style="color: var(--color-text-secondary); font-size: 0.9em; margin-bottom: 1rem;">
-    Completa tu perfil para una mejor experiencia. Puedes omitir este paso y completarlo m\u00e1s tarde.
+    Agrega tus datos personales para completar tu perfil. Puedes omitir este paso y completarlo m\u00e1s tarde.
   </p>
 
   <div class="form-group" style="margin-bottom: 1rem;">
