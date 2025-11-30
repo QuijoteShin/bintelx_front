@@ -34,6 +34,23 @@
       <span class="bx-chip bx-chip--public">public</span>
       <span class="bx-chip bx-chip--muted">sin rutas</span>
     </div>
+    <div class="new-route">
+      <div class="form-row">
+        <input id="new-path" type="text" placeholder="Path (ej: /mi/ruta)" />
+        <input id="new-label" type="text" placeholder="Etiqueta" />
+        <input id="new-group" type="text" placeholder="Grupo (opcional)" />
+      </div>
+      <div class="form-row">
+        <input id="new-role" type="text" placeholder="Rol inicial (opcional)" />
+        <select id="new-scope">
+          <option value="write">write</option>
+          <option value="read">read</option>
+          <option value="private">private</option>
+          <option value="public">public</option>
+        </select>
+        <button id="btn-add-route" class="btn btn-primary">Agregar ruta</button>
+      </div>
+    </div>
   </section>
 
   <section class="panel">

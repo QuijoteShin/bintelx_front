@@ -1,6 +1,7 @@
 import { api } from '../../bnx/api.js';
 import { renderTemplate, devlog } from '../../bnx/utils.js';
 import navRoutes from './routes.json';
+import { localRoutesHint } from '../../bnx/router.js';
 import { renderChips } from '../../bnx/components/chips.js';
 import './index.css';
 
@@ -10,6 +11,12 @@ export default async function(container) {
   const btnRefresh = container.querySelector('#btn-refresh');
   const btnSync = container.querySelector('#btn-sync');
   const btnSaveConfig = container.querySelector('#btn-save-config');
+  const btnAddRoute = container.querySelector('#btn-add-route');
+  const inputNewPath = container.querySelector('#new-path');
+  const inputNewLabel = container.querySelector('#new-label');
+  const inputNewGroup = container.querySelector('#new-group');
+  const inputNewRole = container.querySelector('#new-role');
+  const selectNewScope = container.querySelector('#new-scope');
 
   const scopes = ['write', 'read', 'private', 'public'];
   const nextScope = (scope) => {
@@ -51,60 +58,12 @@ export default async function(container) {
       `;
     }).join('');
 
-    tbody.querySelectorAll('tr').forEach(tr => {
-      const holder = tr.querySelector('[data-chip-holder]');
-      const roles = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
-      const rerender = (updated) => {
-        tr.dataset.roles = JSON.stringify(updated);
-        renderChips(holder, updated, {
-          getClass: (item) => getChipClass(item.scope),
-          getLabel: (item) => item.role || String(item),
-          onClick: (item) => {
-            if (item.role === 'system.admin') return; // no cycle for sysadmin
-            const current = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
-            const updatedList = current.map(r => {
-              const roleVal = r.role || r;
-              if (roleVal === (item.role || item)) {
-                return { role: roleVal, scope: nextScope(item.scope || 'write') };
-              }
-              return r;
-            });
-            rerender(updatedList);
-          },
-          onRemove: (item) => {
-            const next = (tr.dataset.roles ? JSON.parse(tr.dataset.roles) : []).filter(r => (r.role || r) !== (item.role || item));
-            rerender(next);
-          }
-        });
-      };
-      rerender(roles);
-      const addBtn = tr.querySelector('.add-role');
-      const input = tr.querySelector('.role-input');
-      if (addBtn && input) {
-        const addRole = () => {
-          const val = input.value.trim();
-          if (!val) return;
-          const current = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
-          if (!current.find(r => (r.role || r) === val)) {
-            current.push({ role: val, scope: 'write' });
-            rerender(current);
-          }
-          input.value = '';
-        };
-        addBtn.addEventListener('click', addRole);
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            addRole();
-          }
-        });
-      }
-    });
+    tbody.querySelectorAll('tr').forEach(tr => initRow(tr, allowEdit));
   };
 
   const loadData = async () => {
     try {
-      const res = await api.post('/navigation', { action: 'fetch', local_routes: navRoutes });
+      const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
       const payload = res?.d || {};
       const configuredRoutes = payload.routes || [];
       const unconfigured = payload.unconfigured || [];
@@ -130,6 +89,98 @@ export default async function(container) {
     const required_roles = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
     return { path, label, group, required_roles };
   });
+
+  const addNewRoute = () => {
+    const path = (inputNewPath?.value || '').trim();
+    if (!path) {
+      alert('Path es requerido');
+      return;
+    }
+    const label = (inputNewLabel?.value || '').trim() || path;
+    const group = (inputNewGroup?.value || '').trim() || '';
+    const roleVal = (inputNewRole?.value || '').trim();
+    const scopeVal = selectNewScope?.value || 'write';
+    const required_roles = roleVal ? [{ role: roleVal, scope: scopeVal }] : [];
+    const newRoute = { path, label, group, required_roles };
+    appendRow(routesBody, newRoute, true);
+    btnSaveConfig.disabled = false;
+    if (inputNewPath) inputNewPath.value = '';
+    if (inputNewLabel) inputNewLabel.value = '';
+    if (inputNewGroup) inputNewGroup.value = '';
+    if (inputNewRole) inputNewRole.value = '';
+    if (selectNewScope) selectNewScope.value = 'write';
+  };
+
+  const appendRow = (tbody, route, allowEdit) => {
+    const label = route.label || route.path;
+    const group = route.group || '';
+    const rolesJson = JSON.stringify(route.required_roles || []);
+    const rowHtml = `
+      <tr data-path="${route.path}" data-label="${label}" data-group="${group}" data-roles='${rolesJson}'>
+        <td>${route.path}</td>
+        <td>${label}</td>
+        <td>${group}</td>
+        <td>
+          <div class="bx-chips" data-chip-holder></div>
+          ${allowEdit ? `<div class="role-add"><input type="text" placeholder="rol nuevo" class="role-input" /><button class="btn add-role">+</button></div>` : ''}
+        </td>
+      </tr>
+    `;
+    tbody.insertAdjacentHTML('beforeend', rowHtml);
+    initRow(tbody.lastElementChild, allowEdit);
+  };
+
+  const initRow = (tr, allowEdit) => {
+    const holder = tr.querySelector('[data-chip-holder]');
+    const roles = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
+    const rerender = (updated) => {
+      tr.dataset.roles = JSON.stringify(updated);
+      renderChips(holder, updated, {
+        getClass: (item) => getChipClass(item.scope),
+        getLabel: (item) => item.role || String(item),
+        onClick: (item) => {
+          if (item.role === 'system.admin') return; // no cycle for sysadmin
+          const current = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
+          const updatedList = current.map(r => {
+            const roleVal = r.role || r;
+            if (roleVal === (item.role || item)) {
+              return { role: roleVal, scope: nextScope(item.scope || 'write') };
+            }
+            return r;
+          });
+          rerender(updatedList);
+        },
+        onRemove: allowEdit ? (item) => {
+          const next = (tr.dataset.roles ? JSON.parse(tr.dataset.roles) : []).filter(r => (r.role || r) !== (item.role || item));
+          rerender(next);
+        } : undefined
+      });
+    };
+    rerender(roles);
+    if (allowEdit) {
+      const addBtn = tr.querySelector('.add-role');
+      const input = tr.querySelector('.role-input');
+      if (addBtn && input) {
+        const addRole = () => {
+          const val = input.value.trim();
+          if (!val) return;
+          const current = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
+          if (!current.find(r => (r.role || r) === val)) {
+            current.push({ role: val, scope: 'write' });
+            rerender(current);
+          }
+          input.value = '';
+        };
+        addBtn.addEventListener('click', addRole);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addRole();
+          }
+        });
+      }
+    }
+  };
 
   const syncUnconfigured = async () => {
     try {
@@ -158,6 +209,15 @@ export default async function(container) {
   btnRefresh?.addEventListener('click', loadData);
   btnSync?.addEventListener('click', syncUnconfigured);
   btnSaveConfig?.addEventListener('click', saveConfigured);
+  btnAddRoute?.addEventListener('click', addNewRoute);
+  [inputNewPath, inputNewLabel, inputNewGroup, inputNewRole].forEach(inp => {
+    inp?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addNewRoute();
+      }
+    });
+  });
 
   loadData();
 }

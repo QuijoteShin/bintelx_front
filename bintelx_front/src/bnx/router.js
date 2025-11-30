@@ -9,6 +9,7 @@ const appContainer = document.getElementById('app');
 let cachedRoutes = null;
 let cachedRoles = null;
 export { staticRoutes as localRoutesHint };
+const allowConvention = __ALLOW_CONVENTION_ROUTES__ !== false;
 
 // --- helper Functions  ---
 async function DOMDefaults(container) {
@@ -127,13 +128,24 @@ async function handleRouteChange() {
   const match = findMatchingRoute(path);
 
   if (match) {
-    loadApp(match.route, match.params);
-  } else {
-    try {
+    if (match.route.app) {
+      loadApp(match.route, match.params);
+    } else if (allowConvention) {
       await loadAppByConvention(path);
-    } catch (error) {
+    } else {
+      appContainer.innerHTML = '<h2>403 - Ruta no permitida</h2>';
+    }
+  } else {
+    if (allowConvention) {
+      try {
+        await loadAppByConvention(path);
+      } catch (error) {
+        appContainer.innerHTML = '<h2>404 - Page Not Found</h2>';
+        devlog(`Route not found: ${path}`, error, 'trace');
+      }
+    } else {
       appContainer.innerHTML = '<h2>404 - Page Not Found</h2>';
-      devlog(`Route not found: ${path}`, error, 'trace');
+      devlog(`Route not found (convention disabled): ${path}`, 'trace');
     }
   }
 }

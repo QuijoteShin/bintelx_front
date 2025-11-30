@@ -9,6 +9,7 @@ export const config = {
         timeout: __API_TIMEOUT__
     },
     navEndpoint: __NAV_ENDPOINT__,
+    allowConventionRoutes: __ALLOW_CONVENTION_ROUTES__,
     authAppPath: '_auth/login',
     AUTH_APP_TEMPLATE_PATH: '_auth/login/index.tpls',
     AUTH_APP_SCRIPT_PATH: '_auth/login/index.js',

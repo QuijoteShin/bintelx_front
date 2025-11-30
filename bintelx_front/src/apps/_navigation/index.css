@@ -4,6 +4,11 @@
   gap: 20px;
   background: #f8fafc;
 }
+.nav-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
 .panel {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -79,4 +84,33 @@
   margin-top: 10px;
   display: flex;
   gap: 8px;
+}
+.new-route {
+  margin-top: 16px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 12px;
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.new-route input, .new-route select {
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+@media (min-width: 768px) {
+  .nav-admin {
+    padding: 32px;
+    gap: 24px;
+  }
+  .nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
