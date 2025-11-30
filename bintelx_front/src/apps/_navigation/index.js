@@ -15,6 +15,8 @@ export default async function(container) {
   const inputNewPath = container.querySelector('#new-path');
   const inputNewLabel = container.querySelector('#new-label');
   const inputNewGroup = container.querySelector('#new-group');
+  const inputNewApp = container.querySelector('#new-app');
+  const inputNewModule = container.querySelector('#new-module');
   const inputNewRole = container.querySelector('#new-role');
   const selectNewScope = container.querySelector('#new-scope');
 
@@ -43,16 +45,18 @@ export default async function(container) {
     tbody.innerHTML = rows.map(r => {
       const label = r.label || r.path;
       const group = r.group || '';
+      const app = r.app || '';
+      const moduleName = r.moduleName || '';
       const roles = r.required_roles || [];
       const rolesJson = JSON.stringify(roles);
       return `
-        <tr data-path="${r.path}" data-label="${label}" data-group="${group}" data-roles='${rolesJson}'>
+        <tr data-path="${r.path}" data-label="${label}" data-group="${group}" data-app="${app}" data-module="${moduleName}" data-roles='${rolesJson}'>
           <td>${r.path}</td>
           <td>${label}</td>
-          <td>${group}</td>
+          <td>${group || app || moduleName}</td>
           <td>
             <div class="bx-chips" data-chip-holder></div>
-            ${allowEdit ? `<div class="role-add"><input type="text" placeholder="rol nuevo" class="role-input" /><button class="btn add-role">+</button></div>` : ''}
+            ${allowEdit ? `<div class="role-add"><input type="text" placeholder="rol nuevo" class="role-input" /><button class="btn add-role">+</button><button class="btn remove-route">Eliminar</button></div>` : ''}
           </td>
         </tr>
       `;
@@ -86,8 +90,10 @@ export default async function(container) {
     const path = tr.dataset.path;
     const label = tr.dataset.label;
     const group = tr.dataset.group;
+    const app = tr.dataset.app || '';
+    const moduleName = tr.dataset.module || '';
     const required_roles = tr.dataset.roles ? JSON.parse(tr.dataset.roles) : [];
-    return { path, label, group, required_roles };
+    return { path, label, group, app, moduleName, required_roles };
   });
 
   const addNewRoute = () => {
@@ -98,15 +104,28 @@ export default async function(container) {
     }
     const label = (inputNewLabel?.value || '').trim() || path;
     const group = (inputNewGroup?.value || '').trim() || '';
+    const app = (inputNewApp?.value || '').trim() || '';
+    const moduleName = (inputNewModule?.value || '').trim() || '';
     const roleVal = (inputNewRole?.value || '').trim();
     const scopeVal = selectNewScope?.value || 'write';
     const required_roles = roleVal ? [{ role: roleVal, scope: scopeVal }] : [];
-    const newRoute = { path, label, group, required_roles };
+    const existingPaths = new Set([
+      ...collectRows(routesBody).map(r => r.path),
+      ...collectRows(unconfBody).map(r => r.path),
+      ...localRoutesHint.map(r => r.path)
+    ]);
+    if (existingPaths.has(path)) {
+      alert('La ruta ya existe en navegación o locales');
+      return;
+    }
+    const newRoute = { path, label, group, app, moduleName, required_roles };
     appendRow(routesBody, newRoute, true);
     btnSaveConfig.disabled = false;
     if (inputNewPath) inputNewPath.value = '';
     if (inputNewLabel) inputNewLabel.value = '';
     if (inputNewGroup) inputNewGroup.value = '';
+    if (inputNewApp) inputNewApp.value = '';
+    if (inputNewModule) inputNewModule.value = '';
     if (inputNewRole) inputNewRole.value = '';
     if (selectNewScope) selectNewScope.value = 'write';
   };
@@ -114,15 +133,17 @@ export default async function(container) {
   const appendRow = (tbody, route, allowEdit) => {
     const label = route.label || route.path;
     const group = route.group || '';
+    const app = route.app || '';
+    const moduleName = route.moduleName || '';
     const rolesJson = JSON.stringify(route.required_roles || []);
     const rowHtml = `
-      <tr data-path="${route.path}" data-label="${label}" data-group="${group}" data-roles='${rolesJson}'>
+      <tr data-path="${route.path}" data-label="${label}" data-group="${group}" data-app="${app}" data-module="${moduleName}" data-roles='${rolesJson}'>
         <td>${route.path}</td>
         <td>${label}</td>
         <td>${group}</td>
         <td>
           <div class="bx-chips" data-chip-holder></div>
-          ${allowEdit ? `<div class="role-add"><input type="text" placeholder="rol nuevo" class="role-input" /><button class="btn add-role">+</button></div>` : ''}
+          ${allowEdit ? `<div class="role-add"><input type="text" placeholder="rol nuevo" class="role-input" /><button class="btn add-role">+</button><button class="btn remove-route">Eliminar</button></div>` : ''}
         </td>
       </tr>
     `;
@@ -160,6 +181,7 @@ export default async function(container) {
     if (allowEdit) {
       const addBtn = tr.querySelector('.add-role');
       const input = tr.querySelector('.role-input');
+      const removeBtn = tr.querySelector('.remove-route');
       if (addBtn && input) {
         const addRole = () => {
           const val = input.value.trim();
@@ -179,6 +201,10 @@ export default async function(container) {
           }
         });
       }
+      removeBtn?.addEventListener('click', () => {
+        tr.remove();
+        btnSaveConfig.disabled = false;
+      });
     }
   };
 
@@ -197,7 +223,7 @@ export default async function(container) {
   const saveConfigured = async () => {
     try {
       const rows = collectRows(routesBody);
-      await api.post('/navigation', { action: 'save', routes: rows, replace: false });
+      await api.post('/navigation', { action: 'save', routes: rows, replace: true });
       await loadData();
       alert('Rutas configuradas guardadas');
     } catch (e) {

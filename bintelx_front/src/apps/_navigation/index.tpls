@@ -39,6 +39,8 @@
         <input id="new-path" type="text" placeholder="Path (ej: /mi/ruta)" />
         <input id="new-label" type="text" placeholder="Etiqueta" />
         <input id="new-group" type="text" placeholder="Grupo (opcional)" />
+        <input id="new-app" type="text" placeholder="App (ej: _profile)" />
+        <input id="new-module" type="text" placeholder="Módulo (ej: index)" />
       </div>
       <div class="form-row">
         <input id="new-role" type="text" placeholder="Rol inicial (opcional)" />
