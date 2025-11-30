@@ -1,29 +1,42 @@
-// /src/apps/layout/navigation/index.js
-
-import './index.css';
+import { api } from '../../../bnx/api.js';
+import { devlog } from '../../../bnx/utils.js';
 import { authFlow } from '../../../bnx/auth.js';
+import { localRoutesHint } from '../../../bnx/router.js';
+import './index.css';
 
-export default function(container) {
-    console.log('Navigation component initialized.');
+export default async function(container) {
+  const list = container.querySelector('#bx-nav-list');
 
-    // Highlight active nav link
-    const currentPath = window.location.pathname;
-    const navLinks = container.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
-        }
-    });
-
-    // Initialize logout button
-    const logoutButton = container.querySelector('#nav-logout-button');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', () => {
-            console.log('Navbar logout button clicked');
-            const confirmed = confirm('¿Estás seguro que deseas cerrar sesión?');
-            if (confirmed) {
-                authFlow.logout();
-            }
-        });
+  const render = (routes) => {
+    if (!routes || !routes.length) {
+      list.innerHTML = '<li class="bx-nav__item bx-nav__item--empty">Sin rutas disponibles</li>';
+      return;
     }
+    const html = routes.map(r => {
+      const label = r.label || r.path;
+      return `<li class="bx-nav__item"><a href="${r.path}">${label}</a></li>`;
+    }).join('');
+    list.innerHTML = html + `<li class="bx-nav__item bx-nav__logout"><button id="bx-logout">Cerrar sesión</button></li>`;
+
+    const btnLogout = list.querySelector('#bx-logout');
+    btnLogout?.addEventListener('click', (e) => {
+      e.preventDefault();
+      authFlow.logout();
+    });
+  };
+
+  try {
+    const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
+    const payload = res?.d || {};
+    const routes = payload.routes || [];
+    const configured = payload.configured ?? false;
+    if (!configured && (!routes || routes.length === 0)) {
+      render(localRoutesHint); // fallback to local routes
+    } else {
+      render(routes);
+    }
+  } catch (e) {
+    devlog('Nav load failed, using local routes', e);
+    render(localRoutesHint);
+  }
 }

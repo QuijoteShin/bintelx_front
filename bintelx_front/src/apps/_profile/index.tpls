@@ -1,0 +1,292 @@
+<div class="profile-container">
+  <!-- Dashboard Section -->
+  <div class="profile-dashboard">
+    <div class="dashboard-header">
+      <div class="user-avatar">
+        <div class="avatar-placeholder">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="32" fill="var(--color-primary-100)"/>
+            <path d="M32 32C37.5228 32 42 27.5228 42 22C42 16.4772 37.5228 12 32 12C26.4772 12 22 16.4772 22 22C22 27.5228 26.4772 32 32 32Z" fill="var(--color-primary-500)"/>
+            <path d="M12 52C12 43.1634 19.1634 36 28 36H36C44.8366 36 52 43.1634 52 52V56H12V52Z" fill="var(--color-primary-500)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="user-info">
+        <h1 class="user-name">Juan Pérez</h1>
+        <p class="user-email">Cuenta: juan.perez@example.com</p>
+        <p class="user-profile-email">Perfil: juan.perez@example.com</p>
+        <span class="user-role">Administrador</span>
+      </div>
+    </div>
+
+    <!-- Dashboard Stats -->
+    <div class="dashboard-stats">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-label">Último acceso</h3>
+          <p class="stat-value">Hace 2 horas</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-label">Sesiones activas</h3>
+          <p class="stat-value">2 dispositivos</p>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15V3M12 15L8 11M12 15L16 11M2 17L2.621 19.485C2.72915 19.9177 3.11013 20.2388 3.5547 20.2553C6.81434 20.3738 10.4627 20.5 12 20.5C13.5373 20.5 17.1857 20.3738 20.4453 20.2553C20.8899 20.2388 21.2708 19.9177 21.379 19.485L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <h3 class="stat-label">Cuenta creada</h3>
+          <p class="stat-value">12 Ene 2024</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Button -->
+    <div class="dashboard-actions">
+      <button id="logout-button" class="button-secondary logout-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 16L21 12M21 12L17 8M21 12H7M13 16V17C13 18.6569 11.6569 20 10 20H6C4.34315 20 3 18.6569 3 17V7C3 5.34315 4.34315 4 6 4H10C11.6569 4 13 5.34315 13 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Profile Edit Section with Tabs -->
+  <div class="profile-edit-section">
+    <h2 class="section-title">Configuración de cuenta</h2>
+
+    <!-- Tabs -->
+    <div role="tablist" class="profile-tabs">
+      <button role="tab" aria-selected="true" aria-controls="tab-password" class="tab-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21ZM16 11V7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7V11H16Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Cambiar clave</span>
+      </button>
+      <button role="tab" aria-selected="false" aria-controls="tab-name" class="tab-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Editar nombre</span>
+      </button>
+      <button role="tab" aria-selected="false" aria-controls="tab-email" class="tab-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 8L10.8906 13.2604C11.5624 13.7083 12.4376 13.7083 13.1094 13.2604L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Editar correo</span>
+      </button>
+    </div>
+
+    <!-- Tab Panels -->
+    <div class="tab-content">
+      <!-- Password Tab -->
+      <section id="tab-password" role="tabpanel" class="tab-panel">
+        <div class="card">
+          <h3 class="card-title">Cambiar contraseña</h3>
+          <p class="card-description">Actualiza tu contraseña para mantener tu cuenta segura.</p>
+
+          <form id="form-password" class="profile-form">
+            <div class="form-group">
+              <label for="current-password" class="form-label">Contraseña actual</label>
+              <input
+                type="password"
+                id="current-password"
+                name="current_password"
+                class="form-input"
+                placeholder="Ingresa tu contraseña actual"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="new-password" class="form-label">Nueva contraseña</label>
+              <input
+                type="password"
+                id="new-password"
+                name="new_password"
+                class="form-input"
+                placeholder="Ingresa tu nueva contraseña"
+                minlength="8"
+                required
+              />
+              <small class="form-help">Mínimo 8 caracteres</small>
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-password" class="form-label">Confirmar nueva contraseña</label>
+              <input
+                type="password"
+                id="confirm-password"
+                name="confirm_password"
+                class="form-input"
+                placeholder="Confirma tu nueva contraseña"
+                required
+              />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="button-primary">Actualizar contraseña</button>
+              <button type="button" class="button-secondary" id="cancel-password">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Name Tab -->
+      <section id="tab-name" role="tabpanel" class="tab-panel" hidden>
+        <div class="card">
+          <h3 class="card-title">Editar nombre</h3>
+          <p class="card-description">Actualiza tu nombre y apellidos.</p>
+
+          <form id="form-name" class="profile-form">
+            <div class="form-group">
+              <label for="first-name" class="form-label">Nombre(s)</label>
+              <input
+                type="text"
+                id="first-name"
+                name="first_name"
+                class="form-input"
+                placeholder="Ingresa tu nombre"
+                value="Juan"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="last-name" class="form-label">Apellidos</label>
+              <input
+                type="text"
+                id="last-name"
+                name="last_name"
+                class="form-input"
+                placeholder="Ingresa tus apellidos"
+                value="Pérez"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="display-name" class="form-label">Nombre para mostrar (opcional)</label>
+              <input
+                type="text"
+                id="display-name"
+                name="display_name"
+                class="form-input"
+                placeholder="¿Cómo quieres que te llamen?"
+                value="Juan Pérez"
+              />
+              <small class="form-help">Este nombre se mostrará en la plataforma</small>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="button-primary">Guardar cambios</button>
+              <button type="button" class="button-secondary" id="cancel-name">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Email Tab -->
+      <section id="tab-email" role="tabpanel" class="tab-panel" hidden>
+        <div class="card">
+          <h3 class="card-title">Editar correo electrónico</h3>
+          <p class="card-description">Actualiza tu dirección de correo electrónico.</p>
+
+          <div class="info-alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p>Al cambiar tu correo, recibirás un email de verificación en tu nueva dirección.</p>
+          </div>
+
+          <form id="form-email" class="profile-form">
+            <div class="form-group">
+              <label for="current-email" class="form-label">Correo de la cuenta</label>
+              <input
+                type="email"
+                id="current-email"
+                name="current_email"
+                class="form-input"
+                value="juan.perez@example.com"
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="current-profile-email" class="form-label">Correo del perfil</label>
+              <input
+                type="email"
+                id="current-profile-email"
+                name="current_profile_email"
+                class="form-input"
+                value="juan.perez@example.com"
+                disabled
+              />
+            </div>
+
+            <div class="form-group">
+              <label for "new-email" class="form-label">Nuevo correo (se aplica a cuenta y perfil)</label>
+              <input
+                type="email"
+                id="new-email"
+                name="new_email"
+                class="form-input"
+                placeholder="nuevo.correo@example.com"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="confirm-email" class="form-label">Confirmar nuevo correo</label>
+              <input
+                type="email"
+                id="confirm-email"
+                name="confirm_email"
+                class="form-input"
+                placeholder="nuevo.correo@example.com"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="password-email" class="form-label">Contraseña actual</label>
+              <input
+                type="password"
+                id="password-email"
+                name="password"
+                class="form-input"
+                placeholder="Confirma con tu contraseña"
+                required
+              />
+              <small class="form-help">Por seguridad, confirma tu contraseña actual</small>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="button-primary">Actualizar correo</button>
+              <button type="button" class="button-secondary" id="cancel-email">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>

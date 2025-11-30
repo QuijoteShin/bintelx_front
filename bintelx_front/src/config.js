@@ -8,6 +8,7 @@ export const config = {
         baseUrl: __API_BASE_URL__,
         timeout: __API_TIMEOUT__
     },
+    navEndpoint: __NAV_ENDPOINT__,
     authAppPath: '_auth/login',
     AUTH_APP_TEMPLATE_PATH: '_auth/login/index.tpls',
     AUTH_APP_SCRIPT_PATH: '_auth/login/index.js',

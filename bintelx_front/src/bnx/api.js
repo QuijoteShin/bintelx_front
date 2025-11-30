@@ -92,4 +92,27 @@ export const api = {
    * @param {object} options - Optional fetch options, like a `signal`.
    */
   post: (endpoint, body, options = {}) => request(endpoint, { method: 'POST', body: body, ...options }),
+
+  /**
+   * Performs a PUT request.
+   * @param {string} endpoint - The endpoint to call.
+   * @param {object} body - The body of the request.
+   * @param {object} options - Optional fetch options, like a `signal`.
+   */
+  put: (endpoint, body, options = {}) => request(endpoint, { method: 'PUT', body: body, ...options }),
+
+  /**
+   * Performs a PATCH request.
+   * @param {string} endpoint - The endpoint to call.
+   * @param {object} body - The body of the request.
+   * @param {object} options - Optional fetch options, like a `signal`.
+   */
+  patch: (endpoint, body, options = {}) => request(endpoint, { method: 'PATCH', body: body, ...options }),
+
+  /**
+   * Performs a DELETE request.
+   * @param {string} endpoint - The endpoint to call.
+   * @param {object} options - Optional fetch options, like a `signal`.
+   */
+  del: (endpoint, options = {}) => request(endpoint, { method: 'DELETE', ...options }),
 };

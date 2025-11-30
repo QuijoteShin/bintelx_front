@@ -1,25 +1,6 @@
-<!-- /src/apps/layout/navigation/index.tpls -->
-<nav class="main-navigation">
-  <ul class="nav-list">
-    <li class="nav-item"><a href="/" class="nav-link">Dashboard</a></li>
-    <li class="nav-item"><a href="/_users/list" class="nav-link">Users</a></li>
-    <li class="nav-item"><a href="/demo" class="nav-link">Modal</a></li>
-    <li class="nav-item"><a href="/demo/form" class="nav-link">Forms</a></li>
+<nav class="bx-nav">
+  <div class="bx-nav__brand">Bintelx</div>
+  <ul class="bx-nav__list" id="bx-nav-list">
+    <li class="bx-nav__item">Cargando...</li>
   </ul>
-
-  <div class="nav-actions">
-    <a href="/_profile/index" class="nav-link nav-profile">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Perfil</span>
-    </a>
-    <button id="nav-logout-button" class="nav-logout-button">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17 16L21 12M21 12L17 8M21 12H7M13 16V17C13 18.6569 11.6569 20 10 20H6C4.34315 20 3 18.6569 3 17V7C3 5.34315 4.34315 4 6 4H10C11.6569 4 13 5.34315 13 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Salir</span>
-    </button>
-  </div>
 </nav>

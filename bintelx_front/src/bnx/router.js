@@ -2,9 +2,13 @@
 import { renderTemplate, devlog } from './utils.js';
 import { config } from '../config.js';
 import { authFlow } from "./auth.js"; // Import the simplified authFlow
+import { api } from './api.js';
 
-const routes = __ROUTES__;
+const staticRoutes = __ROUTES__;
 const appContainer = document.getElementById('app');
+let cachedRoutes = null;
+let cachedRoles = null;
+export { staticRoutes as localRoutesHint };
 
 // --- helper Functions  ---
 async function DOMDefaults(container) {
@@ -62,7 +66,8 @@ async function loadAppByConvention(path) {
   }
 }
 function findMatchingRoute(currentPath) {
-  for (const route of routes) {
+  const activeRoutes = cachedRoutes || staticRoutes;
+  for (const route of activeRoutes) {
     const paramNames = [];
     const pathRegex = new RegExp('^' + route.path.replace(/:(\w+)/g, (_, name) => {
       paramNames.push(name);
@@ -95,6 +100,23 @@ async function handleRouteChange() {
 
   // If authenticated, proceed to load the application.
   devlog('Authentication successful. Proceeding to load application.');
+
+  // Load user roles and routes (once per session)
+  if (!cachedRoles) {
+    try {
+      const profile = await api.get('/profile');
+      const data = profile?.d?.data || profile?.d || profile;
+      cachedRoles = data.roles || [];
+    } catch (error) {
+      devlog('No se pudieron obtener roles del perfil; se usarán rutas estáticas.', error);
+      cachedRoles = [];
+    }
+  }
+
+  if (!cachedRoutes) {
+    cachedRoutes = await loadRoutesFromEndpoint(cachedRoles);
+  }
+
   let path = window.location.pathname;
 
   if (path === '/') {
@@ -143,4 +165,34 @@ export function initRouter() {
 
   // Trigger the first route handling on initial page load.
   handleRouteChange();
+}
+
+async function loadRoutesFromEndpoint(userRoles = []) {
+  const endpoint = (config.navEndpoint || '').trim();
+  if (!endpoint) {
+    return staticRoutes;
+  }
+  try {
+    // Send local/static routes so backend knows what's available; action=fetch (read-only)
+    const res = await api.post(endpoint, { action: 'fetch', local_routes: staticRoutes });
+    const payload = res?.d || {};
+    const remoteRoutes = payload.routes || [];
+    const configured = payload.configured ?? false;
+    const filtered = Array.isArray(remoteRoutes)
+      ? remoteRoutes.filter(r => {
+          const req = r.required_roles || [];
+          if (!req.length) return true;
+          if (userRoles.includes('system.admin')) return true;
+          return req.some(x => userRoles.includes(x));
+        })
+      : staticRoutes;
+    // If backend has no configured routes and returned empty, fall back to static/local
+    if (!configured && filtered.length === 0) {
+      return staticRoutes;
+    }
+    return filtered;
+  } catch (e) {
+    devlog('Fallo al cargar rutas desde NAV_ENDPOINT; usando estáticas.', e);
+    return staticRoutes;
+  }
 }

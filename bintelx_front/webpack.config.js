@@ -131,6 +131,7 @@ module.exports = (envArgs, argv) => {
         __AUTH_LOGIN_ENDPOINT__: JSON.stringify(env.AUTH_LOGIN_ENDPOINT),
         __AUTH_VALIDATE_ENDPOINT__: JSON.stringify(env.AUTH_VALIDATE_ENDPOINT),
         __AUTH_REPORT_ENDPOINT__: JSON.stringify(env.AUTH_REPORT_ENDPOINT),
+        __NAV_ENDPOINT__: JSON.stringify(env.NAV_ENDPOINT || ''),
       }),
       // Ignore non-module files (.md, .txt, etc.) in dynamic import contexts
       new webpack.IgnorePlugin({

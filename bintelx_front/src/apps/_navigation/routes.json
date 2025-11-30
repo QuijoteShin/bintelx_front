@@ -1,0 +1,16 @@
+[
+  {
+    "path": "/_navigation/index",
+    "app": "_navigation",
+    "moduleName": "index",
+    "label": "Navegación",
+    "group": "admin"
+  },
+  {
+    "path": "/_navigation/roles",
+    "app": "_navigation",
+    "moduleName": "roles",
+    "label": "Roles",
+    "group": "admin"
+  }
+]

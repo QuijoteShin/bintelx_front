@@ -1,4 +1,5 @@
-// /src/modules/layout/footer/index.js
+import './index.css';
+
 export default function(container) {
-    console.log('Footer component initialized.');
+  // noop footer
 }

@@ -1,0 +1,61 @@
+<div class="nav-admin">
+  <h1>Administrador de Navegación</h1>
+  <p>Configura qué rutas ve cada rol.</p>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Rutas configuradas</h2>
+        <small>Fuente: backend (BD/JSON). Si está vacío, se usan rutas locales.</small>
+      </div>
+      <div class="panel-actions">
+        <button id="btn-refresh" class="btn">Refrescar</button>
+        <button id="btn-save-config" class="btn btn-primary">Guardar cambios</button>
+      </div>
+    </div>
+    <table class="nav-table">
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Etiqueta</th>
+          <th>Grupo</th>
+          <th>Roles requeridos</th>
+        </tr>
+      </thead>
+      <tbody id="routes-body">
+        <tr><td colspan="4">Cargando...</td></tr>
+      </tbody>
+    </table>
+    <div class="chip-legend">
+      <span class="bx-chip bx-chip--danger">system.admin</span>
+      <span class="bx-chip bx-chip--write">write</span>
+      <span class="bx-chip bx-chip--read">read</span>
+      <span class="bx-chip bx-chip--private">private</span>
+      <span class="bx-chip bx-chip--public">public</span>
+      <span class="bx-chip bx-chip--muted">sin rutas</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Rutas locales sin configurar</h2>
+        <small>Reportadas por el front; no tienen regla en backend.</small>
+      </div>
+      <button id="btn-sync" class="btn">Guardar en backend</button>
+    </div>
+    <table class="nav-table">
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Etiqueta</th>
+          <th>Grupo</th>
+          <th>Roles (coma)</th>
+        </tr>
+      </thead>
+      <tbody id="unconfigured-body">
+        <tr><td colspan="4">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>

@@ -1,0 +1,490 @@
+/* src/apps/_profile/index.css */
+
+/* ==============================================
+   PROFILE CONTAINER
+   ============================================== */
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ==============================================
+   DASHBOARD SECTION
+   ============================================== */
+.profile-dashboard {
+  background: var(--color-background-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding-bottom: var(--spacing-6);
+  border-bottom: 1px solid var(--color-border-default);
+  margin-bottom: var(--spacing-6);
+}
+
+.user-avatar {
+  flex-shrink: 0;
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-primary-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-size: var(--text-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-1) 0;
+}
+
+.user-email {
+  font-size: var(--text-size-base);
+  color: var(--color-gray-700);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.user-role {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  border-radius: var(--radius-md);
+  font-size: var(--text-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Dashboard Stats */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-4);
+}
+
+.stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+  border-radius: var(--radius-md);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: var(--text-size-sm);
+  color: var(--color-gray-600);
+  font-weight: var(--font-weight-medium);
+  margin: 0 0 var(--spacing-1) 0;
+}
+
+.stat-value {
+  font-size: var(--text-size-lg);
+  color: var(--color-gray-900);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+/* Dashboard Actions */
+.dashboard-actions {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--color-border-default);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--color-red);
+  border-color: var(--color-red);
+}
+
+.logout-button:hover {
+  background: var(--color-red);
+  color: var(--color-white);
+  border-color: var(--color-red);
+}
+
+.logout-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ==============================================
+   PROFILE EDIT SECTION
+   ============================================== */
+.profile-edit-section {
+  background: var(--color-background-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+  font-size: var(--text-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-6) 0;
+}
+
+/* ==============================================
+   TABS
+   ============================================== */
+.profile-tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  border-bottom: 2px solid var(--color-border-default);
+  margin-bottom: var(--spacing-6);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-gray-600);
+  font-size: var(--text-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-bottom: -2px;
+}
+
+.tab-button:hover {
+  color: var(--color-primary-600);
+  background: var(--color-gray-50);
+}
+
+.tab-button[aria-selected="true"],
+.tab-button.active {
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
+}
+
+.tab-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ==============================================
+   TAB CONTENT
+   ============================================== */
+.tab-content {
+  min-height: 400px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==============================================
+   CARDS
+   ============================================== */
+.card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-6);
+}
+
+.card-title {
+  font-size: var(--text-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-900);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.card-description {
+  font-size: var(--text-size-base);
+  color: var(--color-gray-600);
+  margin: 0 0 var(--spacing-6) 0;
+  line-height: 1.5;
+}
+
+/* ==============================================
+   FORMS
+   ============================================== */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.form-label {
+  font-size: var(--text-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-900);
+  margin: 0;
+}
+
+.form-input {
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--text-size-base);
+  color: var(--color-gray-900);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.form-input:disabled {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+  cursor: not-allowed;
+}
+
+.form-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+.form-help {
+  font-size: var(--text-size-sm);
+  color: var(--color-gray-500);
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-default);
+}
+
+/* ==============================================
+   BUTTONS
+   ============================================== */
+.button-primary {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--text-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-white);
+  background: var(--color-primary-500);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.button-primary:hover {
+  background: var(--color-primary-600);
+  box-shadow: var(--shadow-sm);
+}
+
+.button-primary:active {
+  transform: translateY(1px);
+}
+
+.button-primary:disabled {
+  background: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: var(--text-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-700);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.button-secondary:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-400);
+}
+
+.button-secondary:active {
+  transform: translateY(1px);
+}
+
+/* ==============================================
+   ALERTS
+   ============================================== */
+.info-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--color-blue-50);
+  border: 1px solid var(--color-blue-200);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-4);
+}
+
+.info-alert svg {
+  flex-shrink: 0;
+  color: var(--color-blue-600);
+  margin-top: 2px;
+}
+
+.info-alert p {
+  margin: 0;
+  font-size: var(--text-size-sm);
+  color: var(--color-blue-900);
+  line-height: 1.5;
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: var(--spacing-8);
+}
+
+.error-state p {
+  color: var(--color-red-600);
+  font-size: var(--text-size-base);
+  margin-bottom: var(--spacing-4);
+}
+
+/* ==============================================
+   RESPONSIVE
+   ============================================== */
+@media (max-width: 768px) {
+  .profile-container {
+    padding: var(--spacing-4);
+    gap: var(--spacing-4);
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-actions {
+    justify-content: stretch;
+  }
+
+  .logout-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-tabs {
+    gap: var(--spacing-1);
+  }
+
+  .tab-button {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--text-size-sm);
+  }
+
+  .tab-button span {
+    display: none;
+  }
+
+  .tab-button svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .button-primary,
+  .button-secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: var(--spacing-2);
+  }
+
+  .profile-dashboard,
+  .profile-edit-section {
+    padding: var(--spacing-4);
+  }
+
+  .user-name {
+    font-size: var(--text-size-xl);
+  }
+}

@@ -1,0 +1,82 @@
+.nav-admin {
+  padding: 24px;
+  display: grid;
+  gap: 20px;
+  background: #f8fafc;
+}
+.panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.panel-actions {
+  display: flex;
+  gap: 8px;
+}
+.nav-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.nav-table th, .nav-table td {
+  border: 1px solid #e5e7eb;
+  padding: 10px 8px;
+  font-size: 14px;
+}
+.nav-table th {
+  background: #f1f5f9;
+  text-align: left;
+}
+.btn {
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-primary {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.role-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+.role-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+.role-add input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+.role-add .btn {
+  padding: 8px 10px;
+}
+.panel small {
+  color: #64748b;
+}
+.chip-legend {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
