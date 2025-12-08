@@ -131,6 +131,7 @@ module.exports = (envArgs, argv) => {
         __AUTH_LOGIN_ENDPOINT__: JSON.stringify(env.AUTH_LOGIN_ENDPOINT),
         __AUTH_VALIDATE_ENDPOINT__: JSON.stringify(env.AUTH_VALIDATE_ENDPOINT),
         __AUTH_REPORT_ENDPOINT__: JSON.stringify(env.AUTH_REPORT_ENDPOINT),
+        __WS_BASE_URL__: JSON.stringify(env.WS_BASE_URL || ''),
         __NAV_ENDPOINT__: JSON.stringify(env.NAV_ENDPOINT || ''),
         __ALLOW_CONVENTION_ROUTES__: JSON.stringify(env.ALLOW_CONVENTION_ROUTES !== 'false'),
       }),
