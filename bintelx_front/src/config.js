@@ -8,6 +8,16 @@ export const config = {
         baseUrl: __API_BASE_URL__,
         timeout: __API_TIMEOUT__
     },
+    ws: {
+        baseUrl: (() => {
+            if (__WS_BASE_URL__ && __WS_BASE_URL__ !== '') return __WS_BASE_URL__;
+            if (typeof window !== 'undefined' && window.location) {
+                const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                return `${proto}//${window.location.host}/ws/`;
+            }
+            return '';
+        })()
+    },
     navEndpoint: __NAV_ENDPOINT__,
     allowConventionRoutes: __ALLOW_CONVENTION_ROUTES__,
     authAppPath: '_auth/login',
