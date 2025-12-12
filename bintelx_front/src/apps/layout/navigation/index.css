@@ -29,3 +29,76 @@
 .bx-nav__item--empty {
   color: #94a3b8;
 }
+
+/* Submenu support (CSS-only dropdown) */
+.bx-nav__item--has-submenu {
+  position: relative;
+}
+
+.bx-nav__parent {
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+}
+
+.bx-nav__item--has-submenu:hover .bx-nav__parent,
+.bx-nav__item--has-submenu.is-active .bx-nav__parent {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  min-width: 200px;
+
+  /* Hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+/* Show on hover (CSS puro) */
+.bx-nav__item--has-submenu:hover .bx-nav__submenu,
+.bx-nav__item--has-submenu:focus-within .bx-nav__submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bx-nav__submenu-item {
+  padding: 0;
+}
+
+.bx-nav__submenu-item a {
+  display: block;
+  padding: 8px 16px;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-radius: 0;
+}
+
+.bx-nav__submenu-item a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__submenu-item.is-active a {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+/* Active parent highlight */
+.bx-nav__item.is-active .bx-nav__parent {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
