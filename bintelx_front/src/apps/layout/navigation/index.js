@@ -6,6 +6,11 @@ import './index.css';
 
 export default async function(container) {
   const list = container.querySelector('#bx-nav-list');
+  const unconfiguredSection = container.querySelector('#bx-nav-unconfigured-section');
+  const unconfiguredList = container.querySelector('#bx-nav-unconfigured-list');
+  const unconfiguredCount = container.querySelector('#bx-nav-unconfigured-count');
+  let cachedRoles = [];
+  let cachedUnconfigured = [];
 
   const render = (routes) => {
     if (!routes || !routes.length) {
@@ -76,11 +81,87 @@ export default async function(container) {
     return groups;
   }
 
+  function renderUnconfigured(unconfigured, isAdmin) {
+    if (!unconfiguredSection) return;
+    if (!isAdmin) {
+      unconfiguredSection.hidden = true;
+      return;
+    }
+
+    cachedUnconfigured = unconfigured || [];
+    if (!cachedUnconfigured.length) {
+      unconfiguredSection.hidden = true;
+      return;
+    }
+
+    unconfiguredSection.hidden = false;
+    unconfiguredCount.textContent = cachedUnconfigured.length;
+
+    unconfiguredList.innerHTML = cachedUnconfigured.map((r, idx) => {
+      const label = r.label || r.path;
+      return `
+        <li class="bx-nav-unconfigured__item" data-idx="${idx}">
+          <span class="bx-nav-unconfigured__path">${label}</span>
+          <button class="bx-nav-unconfigured__add" data-idx="${idx}">Agregar</button>
+        </li>
+      `;
+    }).join('');
+
+    unconfiguredList.querySelectorAll('.bx-nav-unconfigured__add').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const idx = Number(btn.dataset.idx || '-1');
+        const route = cachedUnconfigured[idx];
+        if (!route) return;
+        await addRoute(route);
+      });
+    });
+  }
+
+  async function addRoute(route) {
+    try {
+      // Normaliza ruta para guardar en backend
+      const payloadRoute = {
+        path: route.path,
+        label: route.label || route.path,
+        app: route.app || null,
+        moduleName: route.moduleName || null,
+        prefix: route.prefix || null,
+        required_roles: route.required_roles || []
+      };
+      await api.post('/navigation', { action: 'save', routes: [payloadRoute] });
+      // Saca la ruta de la lista local y fuerza recarga de navegación
+      cachedUnconfigured = cachedUnconfigured.filter(r => r.path !== route.path);
+      renderUnconfigured(cachedUnconfigured, cachedRoles.includes('system.admin'));
+      await reloadNavigation();
+    } catch (error) {
+      devlog('No se pudo agregar ruta a navegación', error);
+    }
+  }
+
+  async function reloadNavigation() {
+    try {
+      const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
+      const payload = res?.d || {};
+      const routes = payload.routes || [];
+      cachedRoles = payload.roles || cachedRoles;
+      render(routes);
+    } catch (e) {
+      devlog('Falló recarga de navegación', e);
+    }
+  }
+
   try {
     const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
     const payload = res?.d || {};
     const routes = payload.routes || [];
     const configured = payload.configured ?? false;
+    const unconfigured = payload.unconfigured || [];
+    cachedRoles = payload.roles || [];
+    const isAdmin = cachedRoles.includes('system.admin');
+
+    renderUnconfigured(unconfigured, isAdmin);
+
     if (!configured && (!routes || routes.length === 0)) {
       render(localRoutesHint); // fallback to local routes
     } else {

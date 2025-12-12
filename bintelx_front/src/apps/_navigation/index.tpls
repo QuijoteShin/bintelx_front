@@ -55,6 +55,20 @@
     </div>
   </section>
 
+
+<section class="bx-nav-unconfigured" id="bx-nav-unconfigured-section" aria-label="Rutas locales sin configurar" hidden>
+  <header class="bx-nav-unconfigured__header">
+    <div>
+      <strong>Rutas locales sin configurar</strong>
+      <p class="bx-nav-unconfigured__subtitle">Agrega solo las rutas que quieras exponer; el resto seguirá oculta.</p>
+    </div>
+    <span class="bx-nav-unconfigured__badge" id="bx-nav-unconfigured-count">0</span>
+  </header>
+  <ul class="bx-nav-unconfigured__list" id="bx-nav-unconfigured-list">
+    <li class="bx-nav-unconfigured__item">Sin rutas pendientes</li>
+  </ul>
+ </section>
+
   <section class="panel">
     <div class="panel-header">
       <div>
