@@ -1,4 +1,9 @@
 // src/bnx/api.js
+// Auto-unwrap: Si el backend retorna {data: {...}}, se sube de nivel a response.d
+// Esto permite encapsular payloads en "data" por convencion y el frontend accede directo.
+// Ej: Backend retorna {success: true, data: {user: ...}}
+//     Frontend recibe response.d = {user: ...} (sin el wrapper)
+// Si NO hay .data, response.d es el objeto completo.
 import { config } from '../config.js';
 import {devlog} from "./utils";
 const MODE_IN = __MODE_IN__;
