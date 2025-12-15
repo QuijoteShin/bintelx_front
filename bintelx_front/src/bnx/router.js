@@ -68,11 +68,21 @@ async function loadAppByConvention(path) {
 }
 function findMatchingRoute(currentPath) {
   const activeRoutes = cachedRoutes || staticRoutes;
-  for (const route of activeRoutes) {
+
+  // Sort routes: specific (no params) first, then by specificity
+  const sortedRoutes = [...activeRoutes].sort((a, b) => {
+    const aHasParam = a.path.includes(':');
+    const bHasParam = b.path.includes(':');
+    if (aHasParam !== bHasParam) return aHasParam ? 1 : -1;
+    return b.path.length - a.path.length;
+  });
+
+  for (const route of sortedRoutes) {
     const paramNames = [];
-    const pathRegex = new RegExp('^' + route.path.replace(/:(\w+)/g, (_, name) => {
+    // Support typed params: :id(\d+) or :id (default: [\w-]+)
+    const pathRegex = new RegExp('^' + route.path.replace(/:(\w+)(?:\(([^)]+)\))?/g, (_, name, pattern) => {
       paramNames.push(name);
-      return '([\\w-]+)';
+      return '(' + (pattern || '[\\w-]+') + ')';
     }) + '$');
     const match = currentPath.match(pathRegex);
     if (match) {
