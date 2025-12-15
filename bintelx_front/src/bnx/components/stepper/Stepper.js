@@ -125,6 +125,7 @@ class Stepper extends HTMLElement {
                     newStepElement, // The target HTMLElement for content injection (the div for this step)
                     {
                         stepData: this._stepData[stepId] || {}, // Pass current step's data
+                        allStepData: this._stepData, // Pass all steps data for summary access
                         updateStepDataCallback: (updatedData) => { // Callback for step to update its data in Stepper
                             this._stepData[stepId] = { ...this._stepData[stepId], ...updatedData };
                         }
