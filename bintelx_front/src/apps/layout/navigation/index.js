@@ -28,15 +28,15 @@ export default async function(container) {
       if (items.length === 1 && items[0].path === parent) {
         // Single item, no submenu
         const r = items[0];
-        const isActive = window.location.hash.includes(r.path) ? 'is-active' : '';
+        const isActive = window.location.pathname.includes(r.path) ? 'is-active' : '';
         return `<li class="bx-nav__item ${isActive}"><a href="${r.path}">${r.label || r.path}</a></li>`;
       } else {
         // Has submenu
         const parentLabel = items[0].parent_label || parent;
-        const isActive = items.some(r => window.location.hash.includes(r.path)) ? 'is-active' : '';
+        const isActive = items.some(r => window.location.pathname.includes(r.path)) ? 'is-active' : '';
 
         const submenuItems = items.map(r => {
-          const subActive = window.location.hash.includes(r.path) ? 'is-active' : '';
+          const subActive = window.location.pathname.includes(r.path) ? 'is-active' : '';
           return `<li class="bx-nav__submenu-item ${subActive}"><a href="${r.path}">${r.label || r.path}</a></li>`;
         }).join('');
 
