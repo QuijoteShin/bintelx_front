@@ -30,10 +30,15 @@ async function loadApp(route, params = {}) {
     appContainer.innerHTML = config.appContainer.loading;
     let basePath = appName.split('-').join('/');
     const finalAppPath = prefix ? `${prefix}/${basePath}` : basePath;
-    const [template, { default: logic }] = await Promise.all([
-      import(`../apps/${finalAppPath}/${moduleName}.tpls`).then(m => m.default),
-      import(`../apps/${finalAppPath}/${moduleName}.js`)
-    ]);
+    // Template es obligatorio, JS es opcional
+    const template = await import(`../apps/${finalAppPath}/${moduleName}.tpls`).then(m => m.default);
+    let logic = null;
+    try {
+      const jsModule = await import(`../apps/${finalAppPath}/${moduleName}.js`);
+      logic = jsModule.default;
+    } catch (e) {
+      devlog(`No JS module for ${finalAppPath}/${moduleName}.js - template-only mode`);
+    }
     const renderedHtml = renderTemplate(template, { params });
     appContainer.innerHTML = renderedHtml;
     DOMDefaults(appContainer);
