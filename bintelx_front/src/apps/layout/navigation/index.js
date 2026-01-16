@@ -1,16 +1,139 @@
+// src/apps/layout/navigation/index.js
 import { api } from '../../../bnx/api.js';
 import { devlog } from '../../../bnx/utils.js';
 import { authFlow } from '../../../bnx/auth.js';
 import { localRoutesHint } from '../../../bnx/router.js';
 import './index.css';
 
+const AVATAR_PATTERNS = [
+  '',                  // Default (soft radial)
+  'pattern-checker',
+  'pattern-sunburst',
+  'pattern-bauhaus',
+  'pattern-zigzag',
+  'pattern-rings',
+  'pattern-diagonal',
+  'pattern-dots'
+];
+
+function simpleHash(str) {
+  let hash = 5381;  // DJB2 seed for better distribution
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) {
+    const char = s.charCodeAt(i);
+    hash = ((hash << 5) + hash) + char;  // hash * 33 + char
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+function getAvatarProps(profileId) {
+  const hash = simpleHash(profileId);
+  const hue = hash % 360;
+  const patternIndex = hash % AVATAR_PATTERNS.length;
+  const patternClass = AVATAR_PATTERNS[patternIndex];
+  return { hue, patternClass };
+}
+
 export default async function(container) {
   const list = container.querySelector('#bx-nav-list');
   const unconfiguredSection = container.querySelector('#bx-nav-unconfigured-section');
   const unconfiguredList = container.querySelector('#bx-nav-unconfigured-list');
   const unconfiguredCount = container.querySelector('#bx-nav-unconfigured-count');
+  const profileSection = container.querySelector('#bx-nav-profile');
+  const profileAvatar = container.querySelector('#profile-avatar');
+  const profileInitial = container.querySelector('#profile-initial');
+  const profileScopeName = container.querySelector('#profile-scope-name');
+  const profileScopeRole = container.querySelector('#profile-scope-role');
+  const profileDropdown = container.querySelector('#profile-dropdown');
+  const profileSwitchScope = container.querySelector('#profile-switch-scope');
+  const profileLogout = container.querySelector('#profile-logout');
   let cachedRoles = [];
   let cachedUnconfigured = [];
+  let hasMultipleScopes = false;
+
+  function renderProfileAvatar(profile) {
+    if (!profile || !profileAvatar) return;
+
+    const { profile_id, initial, scope_name, profile_name, is_own_scope, role_label, scope_entity_id } = profile;
+    // Use scope_entity_id for avatar when in switched scope, profile_id for own scope
+    const avatarSeed = is_own_scope ? profile_id : (scope_entity_id || profile_id);
+    const { hue, patternClass } = getAvatarProps(avatarSeed);
+
+    // Apply pattern class and hue
+    profileAvatar.className = `profile-avatar size-sm ${patternClass}`;
+    profileAvatar.style.setProperty('--avatar-hue', hue);
+
+    // Set initial
+    if (profileInitial) {
+      profileInitial.textContent = initial || 'U';
+    }
+
+    // Set scope name and role based on context
+    if (profileScopeName) {
+      if (is_own_scope) {
+        // In own scope: show "Mi espacio" or profile name
+        profileScopeName.textContent = 'Mi espacio';
+      } else {
+        // In switched scope: show workspace name
+        profileScopeName.textContent = scope_name || 'Workspace';
+      }
+    }
+
+    // Set role (only for switched scope)
+    if (profileScopeRole) {
+      if (!is_own_scope && role_label) {
+        profileScopeRole.textContent = role_label;
+      } else if (is_own_scope) {
+        profileScopeRole.textContent = profile_name || '';
+      } else {
+        profileScopeRole.textContent = '';
+      }
+    }
+  }
+
+  function setupProfileSection(profile) {
+    if (!profileSection) return;
+
+    // Toggle dropdown on click (but not on dropdown items)
+    profileSection.addEventListener('click', (e) => {
+      if (profileDropdown && profileDropdown.contains(e.target)) return;
+      e.stopPropagation();
+      profileSection.classList.toggle('is-open');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!profileSection.contains(e.target)) {
+        profileSection.classList.remove('is-open');
+      }
+    });
+
+    // Logout handler
+    if (profileLogout) {
+      profileLogout.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        profileSection.classList.remove('is-open');
+        authFlow.logout();
+      });
+    }
+
+    devlog('Profile section setup complete - checking scopes async...');
+
+    // Check if user has multiple scopes - ASYNC, runs after listeners are attached
+    api.get('/profile/scopes.json').then(scopesRes => {
+      if (scopesRes?.d?.success && scopesRes.d.scopes?.length > 1) {
+        hasMultipleScopes = true;
+        if (profileSwitchScope) {
+          profileSwitchScope.hidden = false;
+        }
+        devlog('Multiple scopes detected:', scopesRes.d.scopes.length);
+      }
+    }).catch(err => {
+      devlog('Error checking scopes:', err);
+    });
+  }
 
   const render = (routes) => {
     if (!routes || !routes.length) {
@@ -51,13 +174,7 @@ export default async function(container) {
       }
     }).join('');
 
-    list.innerHTML = html + `<li class="bx-nav__item bx-nav__logout"><button id="bx-logout">Cerrar sesión</button></li>`;
-
-    const btnLogout = list.querySelector('#bx-logout');
-    btnLogout?.addEventListener('click', (e) => {
-      e.preventDefault();
-      authFlow.logout();
-    });
+    list.innerHTML = html;
   };
 
   function groupRoutesByParent(routes) {
@@ -157,8 +274,16 @@ export default async function(container) {
     const routes = payload.routes || [];
     const configured = payload.configured ?? false;
     const unconfigured = payload.unconfigured || [];
-    cachedRoles = payload.roles || [];
-    const isAdmin = cachedRoles.includes('system.admin');
+    cachedRoles = payload.roles || {};
+    // roles es un objeto {id: 'role_code'}, convertir a array de valores
+    const roleValues = Object.values(cachedRoles);
+    const isAdmin = roleValues.includes('system.admin');
+
+    // Render profile avatar with pattern and hue
+    renderProfileAvatar(payload.profile);
+
+    // Check if user has multiple scopes and setup profile click
+    setupProfileSection(payload.profile);
 
     renderUnconfigured(unconfigured, isAdmin);
 
