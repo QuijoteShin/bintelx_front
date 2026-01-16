@@ -449,7 +449,7 @@ class BnxDataGrid extends HTMLElement {
                         return;
                     }
                 }
-                nextIndex = 0; # Loop to start of current row
+                nextIndex = 0; // Loop to start of current row
             }
         } else {
             nextIndex = currentIndex - 1;
@@ -464,7 +464,7 @@ class BnxDataGrid extends HTMLElement {
                         return;
                     }
                 }
-                nextIndex = editableCells.length - 1; # Loop to end
+                nextIndex = editableCells.length - 1; // Loop to end
             }
         }
 
