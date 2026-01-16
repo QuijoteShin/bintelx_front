@@ -3,5 +3,11 @@
     "path": "/_profile/index",
     "app": "_profile",
     "moduleName": "index"
+  },
+  {
+    "path": "/profile/selector",
+    "app": "_profile",
+    "moduleName": "selector/index",
+    "hidden": true
   }
 ]
