@@ -37,7 +37,7 @@ class BnxDataGrid extends HTMLElement {
         return this.getAttribute('row-key') || 'id';
     }
 
-    # --- Public API ---
+    // --- Public API ---
 
     setColumns(columns) {
         # columns: [{ key, label, type, editable, width, align, format, badge }]
@@ -83,7 +83,7 @@ class BnxDataGrid extends HTMLElement {
         this.render();
     }
 
-    # --- Rendering ---
+    // --- Rendering ---
 
     render() {
         const styles = this._getStyles();
@@ -236,7 +236,7 @@ class BnxDataGrid extends HTMLElement {
         return `<span class="badge badge-${color}">${value}</span>`;
     }
 
-    # --- Event Listeners ---
+    // --- Event Listeners ---
 
     _attachSpreadsheetListeners() {
         const cells = this.shadowRoot.querySelectorAll('td[contenteditable="true"]');
@@ -344,7 +344,7 @@ class BnxDataGrid extends HTMLElement {
         }));
     }
 
-    # --- Keyboard Navigation ---
+    // --- Keyboard Navigation ---
 
     _setupKeyboardNavigation() {
         this.shadowRoot.addEventListener('keydown', (e) => {
@@ -475,7 +475,7 @@ class BnxDataGrid extends HTMLElement {
         }
     }
 
-    # --- Styles ---
+    // --- Styles ---
 
     _getStyles() {
         return `
