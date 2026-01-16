@@ -30,15 +30,10 @@ async function loadApp(route, params = {}) {
     appContainer.innerHTML = config.appContainer.loading;
     let basePath = appName.split('-').join('/');
     const finalAppPath = prefix ? `${prefix}/${basePath}` : basePath;
-    // Template es obligatorio, JS es opcional
-    const template = await import(`../apps/${finalAppPath}/${moduleName}.tpls`).then(m => m.default);
-    let logic = null;
-    try {
-      const jsModule = await import(`../apps/${finalAppPath}/${moduleName}.js`);
-      logic = jsModule.default;
-    } catch (e) {
-      devlog(`No JS module for ${finalAppPath}/${moduleName}.js - template-only mode`);
-    }
+    const [template, { default: logic }] = await Promise.all([
+      import(`../apps/${finalAppPath}/${moduleName}.tpls`).then(m => m.default),
+      import(`../apps/${finalAppPath}/${moduleName}.js`)
+    ]);
     const renderedHtml = renderTemplate(template, { params });
     appContainer.innerHTML = renderedHtml;
     DOMDefaults(appContainer);
@@ -162,6 +157,30 @@ async function handleRouteChange() {
       appContainer.innerHTML = '<h2>404 - Page Not Found</h2>';
       devlog(`Route not found (convention disabled): ${path}`, 'trace');
     }
+  }
+}
+
+/**
+ * Programmatic navigation - SPA route change.
+ * @param {string} path - The path to navigate to (e.g., '/entity/123')
+ * @param {object} state - Optional state object for history
+ */
+export function navigate(path, state = {}) {
+  if (path !== window.location.pathname) {
+    history.pushState({ path, ...state }, '', path);
+    handleRouteChange();
+  }
+}
+
+/**
+ * Replace current URL without triggering navigation.
+ * Useful for updating URL to reflect state (e.g., selected item) without reloading.
+ * @param {string} path - The new path to show in URL
+ * @param {object} state - Optional state object for history
+ */
+export function replaceUrl(path, state = {}) {
+  if (path !== window.location.pathname) {
+    history.replaceState({ path, ...state }, '', path);
   }
 }
 
