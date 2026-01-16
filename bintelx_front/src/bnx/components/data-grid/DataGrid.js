@@ -40,7 +40,7 @@ class BnxDataGrid extends HTMLElement {
     // --- Public API ---
 
     setColumns(columns) {
-        # columns: [{ key, label, type, editable, width, align, format, badge }]
+        // columns: [{ key, label, type, editable, width, align, format, badge }]
         this._columns = columns;
         this._editableColumns = new Set(
             columns.filter(c => c.editable).map(c => c.key)
@@ -58,7 +58,7 @@ class BnxDataGrid extends HTMLElement {
     }
 
     setCardTemplate(templateFn) {
-        # templateFn: (item, index) => HTML string
+        // templateFn: (item, index) => HTML string
         this._cardTemplate = templateFn;
         if (this.mode === 'cards') {
             this.render();
@@ -163,7 +163,7 @@ class BnxDataGrid extends HTMLElement {
                     ${this._cardTemplate(item, idx)}
                 </div>`;
             }
-            # Default card rendering from columns
+            // Default card rendering from columns
             return this._renderDefaultCard(item, idx);
         }).join('');
 
@@ -271,17 +271,17 @@ class BnxDataGrid extends HTMLElement {
         const col = this._columns.find(c => c.key === key);
         let value = cell.innerText.trim();
 
-        # Parse number types
+        // Parse number types
         if (col?.type === 'number' || col?.type === 'currency') {
             value = parseFloat(value.replace(/[$,]/g, '').replace(',', '.')) || 0;
         }
 
-        # Update internal data
+        // Update internal data
         if (this._data[rowIdx]) {
             this._data[rowIdx][key] = value;
         }
 
-        # Dispatch event
+        // Dispatch event
         this.dispatchEvent(new CustomEvent('cell-change', {
             bubbles: true,
             composed: true,
@@ -304,7 +304,7 @@ class BnxDataGrid extends HTMLElement {
         const cell = e.target;
         cell.classList.add('cell-focused');
 
-        # Select all text on focus
+        // Select all text on focus
         const selection = window.getSelection();
         const range = document.createRange();
         range.selectNodeContents(cell);
@@ -358,7 +358,7 @@ class BnxDataGrid extends HTMLElement {
             if (selection.rangeCount === 0) return;
             const range = selection.getRangeAt(0);
 
-            # Allow normal text navigation when text is selected or cursor is mid-text
+            // Allow normal text navigation when text is selected or cursor is mid-text
             if (!range.collapsed) return;
 
             const isAtStart = this._isCursorAtStart(cell, range);
@@ -439,7 +439,7 @@ class BnxDataGrid extends HTMLElement {
         if (direction === 1) {
             nextIndex = currentIndex + 1;
             if (nextIndex >= editableCells.length) {
-                # Move to next row first editable cell
+                // Move to next row first editable cell
                 const nextRow = currentRow.nextElementSibling;
                 if (nextRow && nextRow.closest('tbody')) {
                     const nextCell = nextRow.querySelector('td[contenteditable="true"]');
@@ -454,7 +454,7 @@ class BnxDataGrid extends HTMLElement {
         } else {
             nextIndex = currentIndex - 1;
             if (nextIndex < 0) {
-                # Move to previous row last editable cell
+                // Move to previous row last editable cell
                 const prevRow = currentRow.previousElementSibling;
                 if (prevRow && prevRow.closest('tbody')) {
                     const prevCells = prevRow.querySelectorAll('td[contenteditable="true"]');
