@@ -43,27 +43,52 @@ function removeCookie(name) {
 
 
 /**
- * CORRECTED: Called when the login UI returns a token.
- * It no longer re-routes, which preserves the application state.
+ * Called when the login UI returns a token.
+ * Checks if user has multiple scopes and redirects to selector if needed.
  * @param {string} [token] - The session token from the login API.
  */
-function handleSuccessfulLogin(token) {
+async function handleSuccessfulLogin(token) {
     devlog(`Login successful. Received token from UI.`);
     if (token) {
         // 1. Save the session credentials
         setCookie(config.AUTH_TOKEN_NAME, token);
         sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now());
-        // 2. Start the background monitor to check for expiration
-        startSessionMonitor();
-        // 3. Simply hide the overlay. This restores the previous DOM state,
-        // including the text the user was typing in the form
-        hideLoginOverlay();
-        devlog('Overlay removed. Reloading the application.');
-        // 4. Reload the page to refresh the application state
-        window.location.reload();
+
+        // 2. Check if user has multiple scopes
+        try {
+            const scopesRes = await api.get('/profile/scopes.json');
+            devlog('Scopes check:', scopesRes);
+
+            if (scopesRes?.d?.success && scopesRes.d.scopes?.length > 1) {
+                // Multiple scopes - redirect to selector, preserving original URL
+                devlog('Multiple scopes detected. Redirecting to selector...');
+                hideLoginOverlay();
+                const returnUrl = window.location.pathname + window.location.search;
+                const selectorUrl = returnUrl && returnUrl !== '/'
+                    ? `/profile/selector?returnUrl=${encodeURIComponent(returnUrl)}`
+                    : '/profile/selector';
+                window.location.href = selectorUrl;
+                return;
+            }
+        } catch (err) {
+            devlog('Error checking scopes, continuing with default:', err);
+        }
+
+        // 3. Single scope or error - continue normally
+        finishLogin();
     } else {
         alert("Login failed. Please check your credentials.");
     }
+}
+
+/**
+ * Completes the login process
+ */
+function finishLogin() {
+    startSessionMonitor();
+    hideLoginOverlay();
+    devlog('Login complete. Reloading application.');
+    window.location.reload();
 }
 
 function hideLoginOverlay() {
@@ -216,8 +241,20 @@ function logout() {
     devlog('Logout complete. User must re-authenticate.');
 }
 
+/**
+ * Sets the auth token and updates session timestamp
+ * @param {string} token - The JWT token
+ */
+function setToken(token) {
+    if (!token) return false;
+    setCookie(config.AUTH_TOKEN_NAME, token);
+    sessionStorage.setItem(SESSION_TIMESTAMP_KEY, Date.now());
+    return true;
+}
+
 export const authFlow = {
     validate: validateAndShowOverlayIfNeeded,
     logout: logout,
     requestToken: requestToken,
+    setToken: setToken,
 };
