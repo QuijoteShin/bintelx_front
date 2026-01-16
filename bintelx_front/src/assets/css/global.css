@@ -13,6 +13,67 @@
    Foundation of the visual language. Do not use hardcoded values.
 -------------------------------------------------------------------------- */
 :root {
+    /* =========================================================================
+       HSL PRIMITIVES (Refactoring UI Pattern)
+       Store HSL values WITHOUT hsl() wrapper for alpha flexibility.
+       Usage: hsl(var(--slate-500)) or hsl(var(--slate-500) / 0.5) for alpha
+       ========================================================================= */
+
+    /* Slate (blue-tinted grays - Tailwind exact values) */
+    --slate-50:  210 40% 98%;
+    --slate-100: 210 40% 96%;
+    --slate-200: 214 32% 91%;
+    --slate-300: 213 27% 84%;
+    --slate-400: 215 20% 65%;
+    --slate-500: 215 16% 47%;
+    --slate-600: 215 19% 35%;
+    --slate-700: 215 25% 27%;
+    --slate-800: 217 33% 17%;
+    --slate-900: 222 47% 11%;
+
+    /* Indigo (accent premium) */
+    --indigo-50:  226 100% 97%;
+    --indigo-100: 226 100% 94%;
+    --indigo-500: 239 84% 67%;
+    --indigo-600: 243 75% 59%;
+
+    /* Orange (warm action) */
+    --orange-50:  33 100% 96%;
+    --orange-100: 34 100% 92%;
+    --orange-500: 25 95% 53%;
+    --orange-600: 21 90% 48%;
+
+    /* Emerald (success/positive) */
+    --emerald-50:  152 81% 96%;
+    --emerald-100: 149 80% 90%;
+    --emerald-500: 160 84% 39%;
+    --emerald-600: 161 94% 30%;
+
+    /* Green (confirm/active) */
+    --green-50:  138 76% 97%;
+    --green-100: 141 84% 93%;
+    --green-500: 142 71% 45%;
+    --green-600: 142 76% 36%;
+    --green-700: 142 72% 29%;
+
+    /* Amber (warning/caution) */
+    --amber-50:  48 100% 96%;
+    --amber-100: 48 96% 89%;
+    --amber-500: 38 92% 50%;
+    --amber-600: 32 95% 44%;
+
+    /* Blue (info/primary) */
+    --blue-50:  214 100% 97%;
+    --blue-100: 214 95% 93%;
+    --blue-500: 217 91% 60%;
+    --blue-600: 221 83% 53%;
+
+    /* Red (danger/error) */
+    --red-50:  0 86% 97%;
+    --red-100: 0 93% 94%;
+    --red-500: 0 84% 60%;
+    --red-600: 0 72% 51%;
+
     /* Fonts */
     --font-family-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-weight-normal: 400;
