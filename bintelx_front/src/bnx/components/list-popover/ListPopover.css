@@ -1,0 +1,261 @@
+/* src/bnx/components/list-popover/ListPopover.css */
+
+/* Trigger wrapper */
+.list-popover-trigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.list-popover-trigger input {
+    flex: 1;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+.list-popover-trigger input:focus {
+    cursor: text;
+}
+
+.list-popover-chevron {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.list-popover-trigger.is-open .list-popover-chevron {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* Dialog - modal nativo con focus trap */
+.list-popover-dialog {
+    /* Mobile first: fullscreen */
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    overflow: hidden;
+    z-index: 1000;
+}
+
+/* Backdrop sin blur para ver el formulario */
+.list-popover-dialog::backdrop {
+    background-color: hsla(0, 0%, 0%, 0.3);
+    /* Sin backdrop-filter: blur() */
+}
+
+/* Desktop: panel desde abajo */
+@media (min-width: 768px) {
+    .list-popover-dialog {
+        inset: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 90%;
+        max-width: 600px;
+        height: auto;
+        max-height: 60vh;
+        margin: 0 auto;
+        border-top-left-radius: var(--radius-lg);
+        border-top-right-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+    }
+}
+
+/* Content */
+.list-popover-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: inherit;
+}
+
+/* Header con búsqueda */
+.list-popover-header {
+    display: flex;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+    background: var(--color-surface);
+}
+
+.list-popover-search {
+    flex: 1;
+    padding: var(--spacing-3);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    font-size: var(--text-size-base);
+    background: var(--color-background-card);
+}
+
+.list-popover-search:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+.list-popover-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0 var(--spacing-2);
+}
+
+.list-popover-close:hover {
+    color: var(--color-text-primary);
+}
+
+/* Body con lista */
+.list-popover-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-4);
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Supercharged list dentro del dialog */
+.list-popover-list.supercharged-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+}
+
+/* Items */
+.list-popover-list .list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    transition: background-color 150ms, border-color 150ms;
+}
+
+.list-popover-list .list-item:hover,
+.list-popover-list .list-item.is-highlighted {
+    background-color: var(--color-background-subtle);
+    border-color: var(--color-border-default);
+}
+
+/* Ocultar input nativo */
+.list-popover-list .list-item input[type="checkbox"],
+.list-popover-list .list-item input[type="radio"] {
+    display: none;
+}
+
+/* Checkbox/radio icon */
+.list-popover-list .list-item .checkbox-icon-placeholder {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 150ms, border-color 150ms;
+    flex-shrink: 0;
+}
+
+.list-popover-list .list-item input[type="radio"] + .checkbox-icon-placeholder {
+    border-radius: var(--radius-full);
+}
+
+/* Checked state */
+.list-popover-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder,
+.list-popover-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder {
+    background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+}
+
+.list-popover-list .list-item input[type="checkbox"]:checked + .checkbox-icon-placeholder::after {
+    content: '✔';
+    color: var(--color-white);
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.list-popover-list .list-item input[type="radio"]:checked + .checkbox-icon-placeholder::after {
+    content: '';
+    display: block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+    background-color: var(--color-white);
+}
+
+/* Selected label style */
+.list-popover-list .list-item input:checked ~ .list-item-label {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-brand-primary);
+}
+
+/* Empty state */
+.list-popover-empty {
+    display: none;
+    padding: var(--spacing-6);
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+}
+
+/* Footer para multiple */
+.list-popover-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4);
+    border-top: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
+    background: var(--color-surface);
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+    .list-popover-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .list-popover-footer {
+        position: sticky;
+        bottom: 0;
+    }
+
+    .list-popover-list .list-item {
+        padding: var(--spacing-4);
+    }
+}
+
+/* Scrollbar */
+.list-popover-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.list-popover-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.list-popover-body::-webkit-scrollbar-thumb {
+    background: var(--color-border-default);
+    border-radius: 3px;
+}
