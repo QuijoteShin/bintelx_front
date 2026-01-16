@@ -9,6 +9,12 @@ class BnxDataGrid extends HTMLElement {
         this._columns = [];
         this._cardTemplate = null;
         this._editableColumns = new Set();
+        this._newRowTemplate = null;
+        this._pendingArrowDowns = 0;
+        this._lastArrowDownTime = 0;
+        this._pendingCtrlDeletes = 0;
+        this._lastCtrlDeleteTime = 0;
+        this._isEditing = false;
     }
 
     static get observedAttributes() {
@@ -88,9 +94,26 @@ class BnxDataGrid extends HTMLElement {
         this.render();
     }
 
-    setData(data) {
+    setData(data, options = {}) {
+        const activeCell = this.getActiveCell();
+        const wasEditing = this._isEditing;
+
         this._data = Array.isArray(data) ? data : [];
+
+        // Skip render if actively editing and preserveFocus not explicitly false
+        if (wasEditing && options.preserveFocus !== false) {
+            // Just update internal data, don't re-render
+            return;
+        }
+
         this.render();
+
+        // Restore focus if there was an active cell
+        if (activeCell && options.preserveFocus !== false) {
+            requestAnimationFrame(() => {
+                this.focusCell(activeCell.row, activeCell.col);
+            });
+        }
     }
 
     getData() {
@@ -121,6 +144,55 @@ class BnxDataGrid extends HTMLElement {
     deleteRow(key) {
         this._data = this._data.filter(r => r[this.rowKey] !== key);
         this.render();
+    }
+
+    setNewRowTemplate(templateFn) {
+        // templateFn: () => { id: 'new_123', name: '', ... }
+        this._newRowTemplate = templateFn;
+    }
+
+    createNewRow(focusFirstEditable = true) {
+        let newRow;
+        if (this._newRowTemplate) {
+            newRow = this._newRowTemplate();
+        } else {
+            // Default: empty row with generated id
+            newRow = { [this.rowKey]: `_new_${Date.now()}` };
+            this._columns.forEach(col => {
+                if (col.key !== this.rowKey) {
+                    newRow[col.key] = col.type === 'number' || col.type === 'currency' ? 0 : '';
+                }
+            });
+        }
+
+        // Mark as new (created by grid, not from backend)
+        newRow._isNew = true;
+        newRow._createdAt = new Date().toISOString();
+
+        this._data.push(newRow);
+        this.render();
+
+        // Dispatch event
+        this.dispatchEvent(new CustomEvent('row-created', {
+            bubbles: true,
+            detail: {
+                row: newRow,
+                rowIndex: this._data.length - 1
+            }
+        }));
+
+        // Focus first editable cell in new row
+        if (focusFirstEditable) {
+            requestAnimationFrame(() => {
+                const newRowIdx = this._data.length - 1;
+                const firstEditableCol = this._columns.findIndex(c => c.editable);
+                if (firstEditableCol !== -1) {
+                    this.focusCell(newRowIdx, firstEditableCol);
+                }
+            });
+        }
+
+        return newRow;
     }
 
     // --- Styles Injection (once per document) ---
@@ -368,10 +440,36 @@ class BnxDataGrid extends HTMLElement {
     }
 
     _handleCellBlur(e) {
+        this._isEditing = false;
         e.target.classList.remove('bnx-dg-cell-focused');
+
+        const cell = e.target;
+        const rowIdx = parseInt(cell.dataset.row);
+        const key = cell.dataset.key;
+
+        // Delay blur event to check if focus moved to another cell in same grid
+        // This prevents recalc during keyboard navigation
+        setTimeout(() => {
+            const newFocus = document.activeElement;
+            const stillInGrid = this.contains(newFocus) && newFocus.matches('td[contenteditable="true"]');
+
+            // Only dispatch blur if focus left the grid entirely
+            if (!stillInGrid) {
+                this.dispatchEvent(new CustomEvent('cell-blur', {
+                    bubbles: true,
+                    detail: {
+                        rowIndex: rowIdx,
+                        rowKey: this._data[rowIdx]?.[this.rowKey],
+                        column: key,
+                        row: this._data[rowIdx]
+                    }
+                }));
+            }
+        }, 10);
     }
 
     _handleCellFocus(e) {
+        this._isEditing = true;
         const cell = e.target;
         cell.classList.add('bnx-dg-cell-focused');
 
@@ -418,10 +516,18 @@ class BnxDataGrid extends HTMLElement {
     _setupKeyboardNavigation() {
         this.addEventListener('keydown', (e) => {
             if (this.mode !== 'spreadsheet') return;
-            if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) return;
 
             const cell = e.target.closest('td[contenteditable="true"]');
             if (!cell) return;
+
+            // Handle Ctrl+Delete for row deletion (double press)
+            if (e.key === 'Delete' && e.ctrlKey) {
+                e.preventDefault();
+                this._handleCtrlDelete(cell);
+                return;
+            }
+
+            if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) return;
 
             const selection = window.getSelection();
             if (selection.rangeCount === 0) return;
@@ -445,6 +551,60 @@ class BnxDataGrid extends HTMLElement {
                 this._navigateHorizontal(cell, e.shiftKey ? -1 : 1, e);
             } else if (e.key === 'Enter' && !e.shiftKey) {
                 this._navigateVertical(cell, 1, e);
+            }
+        });
+    }
+
+    _handleCtrlDelete(cell) {
+        const now = Date.now();
+        const timeSinceLastCtrlDel = now - this._lastCtrlDeleteTime;
+
+        // Reset counter if more than 500ms since last Ctrl+Delete
+        if (timeSinceLastCtrlDel > 500) {
+            this._pendingCtrlDeletes = 0;
+        }
+
+        this._pendingCtrlDeletes++;
+        this._lastCtrlDeleteTime = now;
+
+        // On second Ctrl+Delete within 500ms, delete the row
+        if (this._pendingCtrlDeletes >= 2) {
+            this._pendingCtrlDeletes = 0;
+            const rowIdx = parseInt(cell.dataset.row);
+            this._deleteRowAtIndex(rowIdx);
+        }
+    }
+
+    _deleteRowAtIndex(rowIdx) {
+        if (rowIdx < 0 || rowIdx >= this._data.length) return;
+
+        const deletedRow = this._data[rowIdx];
+        const rowKey = deletedRow[this.rowKey];
+
+        // Remove from data
+        this._data.splice(rowIdx, 1);
+
+        // Dispatch event before re-render
+        this.dispatchEvent(new CustomEvent('row-deleted', {
+            bubbles: true,
+            detail: {
+                row: deletedRow,
+                rowIndex: rowIdx,
+                rowKey: rowKey
+            }
+        }));
+
+        this._isEditing = false;
+        this.render();
+
+        // Focus previous row or first row
+        requestAnimationFrame(() => {
+            const newFocusRow = Math.max(0, rowIdx - 1);
+            if (this._data.length > 0) {
+                const firstEditableCol = this._columns.findIndex(c => c.editable);
+                if (firstEditableCol !== -1) {
+                    this.focusCell(newFocusRow, firstEditableCol);
+                }
             }
         });
     }
@@ -492,6 +652,27 @@ class BnxDataGrid extends HTMLElement {
             if (targetCell && targetCell.getAttribute('contenteditable') === 'true') {
                 event.preventDefault();
                 targetCell.focus();
+            }
+            // Reset arrow down counter when navigating successfully
+            this._pendingArrowDowns = 0;
+        } else if (direction === 1) {
+            // We're on the last row trying to go down
+            const now = Date.now();
+            const timeSinceLastArrow = now - this._lastArrowDownTime;
+
+            // Reset counter if more than 500ms since last arrow down
+            if (timeSinceLastArrow > 500) {
+                this._pendingArrowDowns = 0;
+            }
+
+            this._pendingArrowDowns++;
+            this._lastArrowDownTime = now;
+
+            // On second arrow down within 500ms, create new row
+            if (this._pendingArrowDowns >= 2) {
+                event.preventDefault();
+                this._pendingArrowDowns = 0;
+                this.createNewRow(true);
             }
         }
     }
