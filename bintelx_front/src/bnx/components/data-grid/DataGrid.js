@@ -1,9 +1,10 @@
 // src/bnx/components/data-grid/DataGrid.js
 
 class BnxDataGrid extends HTMLElement {
+    static _stylesInjected = false;
+
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
         this._data = [];
         this._columns = [];
         this._cardTemplate = null;
@@ -15,12 +16,13 @@ class BnxDataGrid extends HTMLElement {
     }
 
     connectedCallback() {
+        this._injectStyles();
         this.render();
         this._setupKeyboardNavigation();
     }
 
     attributeChangedCallback() {
-        if (this.shadowRoot.innerHTML) {
+        if (this.innerHTML) {
             this.render();
         }
     }
@@ -38,6 +40,44 @@ class BnxDataGrid extends HTMLElement {
     }
 
     // --- Public API ---
+
+    // Focus management para popovers
+    saveFocus() {
+        const active = this.querySelector('td:focus');
+        if (active) {
+            this._savedFocus = {
+                row: parseInt(active.dataset.row),
+                col: parseInt(active.dataset.col)
+            };
+        }
+        return this._savedFocus;
+    }
+
+    restoreFocus() {
+        if (!this._savedFocus) return false;
+        const { row, col } = this._savedFocus;
+        return this.focusCell(row, col);
+    }
+
+    focusCell(rowIdx, colIdx) {
+        const cell = this.querySelector(`td[data-row="${rowIdx}"][data-col="${colIdx}"]`);
+        if (cell) {
+            cell.focus();
+            return true;
+        }
+        return false;
+    }
+
+    getActiveCell() {
+        const active = this.querySelector('td:focus');
+        if (!active) return null;
+        return {
+            row: parseInt(active.dataset.row),
+            col: parseInt(active.dataset.col),
+            key: active.dataset.key,
+            element: active
+        };
+    }
 
     setColumns(columns) {
         // columns: [{ key, label, type, editable, width, align, format, badge }]
@@ -83,17 +123,27 @@ class BnxDataGrid extends HTMLElement {
         this.render();
     }
 
+    // --- Styles Injection (once per document) ---
+
+    _injectStyles() {
+        if (BnxDataGrid._stylesInjected) return;
+
+        const style = document.createElement('style');
+        style.id = 'bnx-data-grid-styles';
+        style.textContent = this._getStyles();
+        document.head.appendChild(style);
+        BnxDataGrid._stylesInjected = true;
+    }
+
     // --- Rendering ---
 
     render() {
-        const styles = this._getStyles();
         const content = this.mode === 'cards'
             ? this._renderCards()
             : this._renderSpreadsheet();
 
-        this.shadowRoot.innerHTML = `
-            <style>${styles}</style>
-            <div class="data-grid data-grid--${this.mode}">
+        this.innerHTML = `
+            <div class="bnx-data-grid bnx-data-grid--${this.mode}">
                 ${content}
             </div>
         `;
@@ -107,12 +157,12 @@ class BnxDataGrid extends HTMLElement {
 
     _renderSpreadsheet() {
         if (!this._columns.length) {
-            return '<div class="empty-state">No columns defined</div>';
+            return '<div class="bnx-dg-empty-state">No columns defined</div>';
         }
 
         const headerCells = this._columns.map(col => {
             const align = col.align || (col.type === 'number' ? 'right' : 'left');
-            const editableClass = col.editable ? 'col-editable' : '';
+            const editableClass = col.editable ? 'bnx-dg-col-editable' : '';
             const width = col.width ? `width: ${col.width};` : '';
             return `<th class="${editableClass}" style="text-align: ${align}; ${width}">${col.label}</th>`;
         }).join('');
@@ -122,11 +172,11 @@ class BnxDataGrid extends HTMLElement {
                 const value = row[col.key] ?? '';
                 const align = col.align || (col.type === 'number' ? 'right' : 'left');
                 const editable = col.editable ? 'contenteditable="true"' : '';
-                const editableClass = col.editable ? 'cell-editable' : '';
+                const editableClass = col.editable ? 'bnx-dg-cell-editable' : '';
                 const formatted = this._formatValue(value, col);
 
                 return `<td
-                    class="${editableClass} cell-${col.type || 'text'}"
+                    class="${editableClass} bnx-dg-cell-${col.type || 'text'}"
                     style="text-align: ${align};"
                     data-row="${rowIdx}"
                     data-col="${colIdx}"
@@ -139,13 +189,13 @@ class BnxDataGrid extends HTMLElement {
         }).join('');
 
         return `
-            <div class="spreadsheet-container">
-                <table class="spreadsheet">
+            <div class="bnx-dg-spreadsheet-container">
+                <table class="bnx-dg-spreadsheet">
                     <thead>
                         <tr>${headerCells}</tr>
                     </thead>
                     <tbody>
-                        ${rows || '<tr><td colspan="' + this._columns.length + '" class="empty-row">Sin datos</td></tr>'}
+                        ${rows || '<tr><td colspan="' + this._columns.length + '" class="bnx-dg-empty-row">Sin datos</td></tr>'}
                     </tbody>
                 </table>
             </div>
@@ -154,37 +204,36 @@ class BnxDataGrid extends HTMLElement {
 
     _renderCards() {
         if (!this._data.length) {
-            return '<div class="empty-state"><slot name="empty">Sin datos</slot></div>';
+            return '<div class="bnx-dg-empty-state">Sin datos</div>';
         }
 
         const cards = this._data.map((item, idx) => {
             if (this._cardTemplate) {
-                return `<div class="card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
+                return `<div class="bnx-dg-card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
                     ${this._cardTemplate(item, idx)}
                 </div>`;
             }
-            // Default card rendering from columns
             return this._renderDefaultCard(item, idx);
         }).join('');
 
-        return `<div class="cards-grid">${cards}</div>`;
+        return `<div class="bnx-dg-cards-grid">${cards}</div>`;
     }
 
     _renderDefaultCard(item, idx) {
         const title = this._columns[0] ? item[this._columns[0].key] : 'Item';
         const fields = this._columns.slice(1).map(col => {
             const value = this._formatValue(item[col.key], col);
-            return `<div class="card-field">
-                <span class="card-field-label">${col.label}</span>
-                <span class="card-field-value">${value}</span>
+            return `<div class="bnx-dg-card-field">
+                <span class="bnx-dg-card-field-label">${col.label}</span>
+                <span class="bnx-dg-card-field-value">${value}</span>
             </div>`;
         }).join('');
 
-        return `<div class="card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
-            <div class="card-header">
-                <h4 class="card-title">${title}</h4>
+        return `<div class="bnx-dg-card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
+            <div class="bnx-dg-card-header">
+                <h4 class="bnx-dg-card-title">${title}</h4>
             </div>
-            <div class="card-body">${fields}</div>
+            <div class="bnx-dg-card-body">${fields}</div>
         </div>`;
     }
 
@@ -233,13 +282,13 @@ class BnxDataGrid extends HTMLElement {
     _formatBadge(value, badgeConfig = {}) {
         const colorMap = badgeConfig.colors || {};
         const color = colorMap[value] || 'default';
-        return `<span class="badge badge-${color}">${value}</span>`;
+        return `<span class="bnx-dg-badge bnx-dg-badge-${color}">${value}</span>`;
     }
 
     // --- Event Listeners ---
 
     _attachSpreadsheetListeners() {
-        const cells = this.shadowRoot.querySelectorAll('td[contenteditable="true"]');
+        const cells = this.querySelectorAll('td[contenteditable="true"]');
 
         cells.forEach(cell => {
             cell.addEventListener('input', (e) => this._handleCellInput(e));
@@ -247,7 +296,13 @@ class BnxDataGrid extends HTMLElement {
             cell.addEventListener('focus', (e) => this._handleCellFocus(e));
         });
 
-        const rows = this.shadowRoot.querySelectorAll('tbody tr');
+        // Cell click event for all cells (editable or not)
+        const allCells = this.querySelectorAll('tbody td');
+        allCells.forEach(cell => {
+            cell.addEventListener('click', (e) => this._handleCellClick(e, cell));
+        });
+
+        const rows = this.querySelectorAll('tbody tr');
         rows.forEach(row => {
             row.addEventListener('click', (e) => {
                 if (!e.target.hasAttribute('contenteditable')) {
@@ -257,8 +312,26 @@ class BnxDataGrid extends HTMLElement {
         });
     }
 
+    _handleCellClick(e, cell) {
+        const rowIdx = parseInt(cell.dataset.row);
+        const colIdx = parseInt(cell.dataset.col);
+        const key = cell.dataset.key;
+
+        this.dispatchEvent(new CustomEvent('cell-click', {
+            bubbles: true,
+            detail: {
+                rowIndex: rowIdx,
+                colIndex: colIdx,
+                column: key,
+                row: this._data[rowIdx],
+                cellElement: cell,
+                originalEvent: e
+            }
+        }));
+    }
+
     _attachCardListeners() {
-        const cards = this.shadowRoot.querySelectorAll('.card');
+        const cards = this.querySelectorAll('.bnx-dg-card');
         cards.forEach(card => {
             card.addEventListener('click', (e) => this._handleCardClick(e, card));
         });
@@ -273,7 +346,7 @@ class BnxDataGrid extends HTMLElement {
 
         // Parse number types
         if (col?.type === 'number' || col?.type === 'currency') {
-            value = parseFloat(value.replace(/[$,]/g, '').replace(',', '.')) || 0;
+            value = parseFloat(value.replace(/[$,\.]/g, '').replace(',', '.')) || 0;
         }
 
         // Update internal data
@@ -284,7 +357,6 @@ class BnxDataGrid extends HTMLElement {
         // Dispatch event
         this.dispatchEvent(new CustomEvent('cell-change', {
             bubbles: true,
-            composed: true,
             detail: {
                 rowIndex: rowIdx,
                 rowKey: this._data[rowIdx]?.[this.rowKey],
@@ -296,13 +368,12 @@ class BnxDataGrid extends HTMLElement {
     }
 
     _handleCellBlur(e) {
-        const cell = e.target;
-        cell.classList.remove('cell-focused');
+        e.target.classList.remove('bnx-dg-cell-focused');
     }
 
     _handleCellFocus(e) {
         const cell = e.target;
-        cell.classList.add('cell-focused');
+        cell.classList.add('bnx-dg-cell-focused');
 
         // Select all text on focus
         const selection = window.getSelection();
@@ -320,7 +391,6 @@ class BnxDataGrid extends HTMLElement {
 
         this.dispatchEvent(new CustomEvent('row-select', {
             bubbles: true,
-            composed: true,
             detail: {
                 rowIndex: rowIdx,
                 rowKey: rowKey,
@@ -335,7 +405,6 @@ class BnxDataGrid extends HTMLElement {
 
         this.dispatchEvent(new CustomEvent('card-click', {
             bubbles: true,
-            composed: true,
             detail: {
                 index: idx,
                 key: key,
@@ -347,7 +416,7 @@ class BnxDataGrid extends HTMLElement {
     // --- Keyboard Navigation ---
 
     _setupKeyboardNavigation() {
-        this.shadowRoot.addEventListener('keydown', (e) => {
+        this.addEventListener('keydown', (e) => {
             if (this.mode !== 'spreadsheet') return;
             if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) return;
 
@@ -358,7 +427,7 @@ class BnxDataGrid extends HTMLElement {
             if (selection.rangeCount === 0) return;
             const range = selection.getRangeAt(0);
 
-            // Allow normal text navigation when text is selected or cursor is mid-text
+            // Allow normal text navigation when text is selected
             if (!range.collapsed) return;
 
             const isAtStart = this._isCursorAtStart(cell, range);
@@ -439,7 +508,6 @@ class BnxDataGrid extends HTMLElement {
         if (direction === 1) {
             nextIndex = currentIndex + 1;
             if (nextIndex >= editableCells.length) {
-                // Move to next row first editable cell
                 const nextRow = currentRow.nextElementSibling;
                 if (nextRow && nextRow.closest('tbody')) {
                     const nextCell = nextRow.querySelector('td[contenteditable="true"]');
@@ -449,12 +517,11 @@ class BnxDataGrid extends HTMLElement {
                         return;
                     }
                 }
-                nextIndex = 0; // Loop to start of current row
+                nextIndex = 0;
             }
         } else {
             nextIndex = currentIndex - 1;
             if (nextIndex < 0) {
-                // Move to previous row last editable cell
                 const prevRow = currentRow.previousElementSibling;
                 if (prevRow && prevRow.closest('tbody')) {
                     const prevCells = prevRow.querySelectorAll('td[contenteditable="true"]');
@@ -464,7 +531,7 @@ class BnxDataGrid extends HTMLElement {
                         return;
                     }
                 }
-                nextIndex = editableCells.length - 1; // Loop to end
+                nextIndex = editableCells.length - 1;
             }
         }
 
@@ -479,7 +546,8 @@ class BnxDataGrid extends HTMLElement {
 
     _getStyles() {
         return `
-            :host {
+            /* ========== BNX DATA GRID - Light DOM ========== */
+            bnx-data-grid {
                 display: block;
                 --grid-border-color: var(--color-border-subtle, #e5e7eb);
                 --grid-header-bg: var(--color-gray-50, #f9fafb);
@@ -488,32 +556,32 @@ class BnxDataGrid extends HTMLElement {
                 --grid-cell-focus-ring: var(--color-brand-primary, #2563eb);
             }
 
-            .data-grid {
+            .bnx-data-grid {
                 width: 100%;
             }
 
             /* ========== SPREADSHEET MODE ========== */
-            .spreadsheet-container {
+            .bnx-dg-spreadsheet-container {
                 overflow-x: auto;
                 border: 1px solid var(--grid-border-color);
                 border-radius: var(--radius-lg, 0.5rem);
                 background: var(--color-white, #fff);
             }
 
-            .spreadsheet {
+            .bnx-dg-spreadsheet {
                 width: 100%;
                 border-collapse: collapse;
                 font-size: var(--text-size-sm, 0.875rem);
                 min-width: 600px;
             }
 
-            .spreadsheet thead {
+            .bnx-dg-spreadsheet thead {
                 position: sticky;
                 top: 0;
                 z-index: 10;
             }
 
-            .spreadsheet th {
+            .bnx-dg-spreadsheet th {
                 background: var(--grid-header-bg);
                 padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
                 font-weight: var(--font-weight-semibold, 600);
@@ -525,32 +593,32 @@ class BnxDataGrid extends HTMLElement {
                 white-space: nowrap;
             }
 
-            .spreadsheet th.col-editable {
+            .bnx-dg-spreadsheet th.bnx-dg-col-editable {
                 background: var(--grid-cell-editable-bg);
                 color: hsl(45, 80%, 35%);
             }
 
-            .spreadsheet td {
+            .bnx-dg-spreadsheet td {
                 padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
                 border-bottom: 1px solid var(--grid-border-color);
                 color: var(--color-text-primary, #111827);
                 transition: background-color 0.15s;
             }
 
-            .spreadsheet tbody tr:hover td {
+            .bnx-dg-spreadsheet tbody tr:hover td {
                 background: var(--grid-row-hover);
             }
 
-            .spreadsheet td.cell-editable {
+            .bnx-dg-spreadsheet td.bnx-dg-cell-editable {
                 background: hsl(48, 96%, 98%);
                 cursor: text;
             }
 
-            .spreadsheet td.cell-editable:hover {
+            .bnx-dg-spreadsheet td.bnx-dg-cell-editable:hover {
                 background: hsl(48, 96%, 95%);
             }
 
-            .spreadsheet td.cell-editable:focus {
+            .bnx-dg-spreadsheet td.bnx-dg-cell-editable:focus {
                 outline: 2px solid var(--grid-cell-focus-ring);
                 outline-offset: -2px;
                 background: hsl(217, 91%, 97%);
@@ -558,13 +626,13 @@ class BnxDataGrid extends HTMLElement {
                 z-index: 20;
             }
 
-            .spreadsheet td.cell-number,
-            .spreadsheet td.cell-currency {
+            .bnx-dg-spreadsheet td.bnx-dg-cell-number,
+            .bnx-dg-spreadsheet td.bnx-dg-cell-currency {
                 font-family: 'JetBrains Mono', ui-monospace, monospace;
                 font-variant-numeric: tabular-nums;
             }
 
-            .empty-row {
+            .bnx-dg-empty-row {
                 text-align: center;
                 color: var(--color-text-tertiary, #9ca3af);
                 font-style: italic;
@@ -572,31 +640,31 @@ class BnxDataGrid extends HTMLElement {
             }
 
             /* ========== CARDS MODE ========== */
-            .cards-grid {
+            .bnx-dg-cards-grid {
                 display: grid;
                 grid-template-columns: repeat(1, 1fr);
                 gap: var(--spacing-4, 1rem);
             }
 
             @media (min-width: 640px) {
-                .cards-grid {
+                .bnx-dg-cards-grid {
                     grid-template-columns: repeat(2, 1fr);
                 }
             }
 
             @media (min-width: 1024px) {
-                .cards-grid {
+                .bnx-dg-cards-grid {
                     grid-template-columns: repeat(3, 1fr);
                 }
             }
 
             @media (min-width: 1280px) {
-                .cards-grid {
+                .bnx-dg-cards-grid {
                     grid-template-columns: repeat(4, 1fr);
                 }
             }
 
-            .card {
+            .bnx-dg-card {
                 background: var(--color-white, #fff);
                 border: 1px solid var(--grid-border-color);
                 border-radius: var(--radius-lg, 0.5rem);
@@ -605,17 +673,17 @@ class BnxDataGrid extends HTMLElement {
                 transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
             }
 
-            .card:hover {
+            .bnx-dg-card:hover {
                 transform: translateY(-2px);
                 box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
                 border-color: var(--color-brand-primary, #2563eb);
             }
 
-            .card-header {
+            .bnx-dg-card-header {
                 margin-bottom: var(--spacing-3, 0.75rem);
             }
 
-            .card-title {
+            .bnx-dg-card-title {
                 font-size: var(--text-size-sm, 0.875rem);
                 font-weight: var(--font-weight-bold, 700);
                 color: var(--color-text-primary, #111827);
@@ -623,29 +691,29 @@ class BnxDataGrid extends HTMLElement {
                 line-height: 1.4;
             }
 
-            .card-body {
+            .bnx-dg-card-body {
                 display: flex;
                 flex-direction: column;
                 gap: var(--spacing-2, 0.5rem);
             }
 
-            .card-field {
+            .bnx-dg-card-field {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 font-size: var(--text-size-sm, 0.875rem);
             }
 
-            .card-field-label {
+            .bnx-dg-card-field-label {
                 color: var(--color-text-tertiary, #9ca3af);
             }
 
-            .card-field-value {
+            .bnx-dg-card-field-value {
                 color: var(--color-text-secondary, #6b7280);
                 font-family: ui-monospace, monospace;
             }
 
-            .card-notes {
+            .bnx-dg-card-notes {
                 margin: var(--spacing-3, 0.75rem) 0 0 0;
                 padding-top: var(--spacing-3, 0.75rem);
                 border-top: 1px solid var(--grid-border-color);
@@ -655,7 +723,7 @@ class BnxDataGrid extends HTMLElement {
             }
 
             /* ========== CATEGORY BADGES ========== */
-            .category-badge {
+            .bnx-dg-category-badge {
                 display: inline-flex;
                 align-items: center;
                 gap: var(--spacing-1, 0.25rem);
@@ -667,23 +735,23 @@ class BnxDataGrid extends HTMLElement {
                 letter-spacing: 0.05em;
             }
 
-            .category-badge-cogs {
+            .bnx-dg-category-badge-cogs {
                 background: hsl(217, 91%, 95%);
                 color: hsl(217, 91%, 45%);
             }
 
-            .category-badge-capex {
+            .bnx-dg-category-badge-capex {
                 background: hsl(160, 84%, 92%);
                 color: hsl(160, 84%, 30%);
             }
 
-            .category-badge-stock {
+            .bnx-dg-category-badge-stock {
                 background: hsl(270, 76%, 94%);
                 color: hsl(270, 71%, 45%);
             }
 
             /* ========== BADGES ========== */
-            .badge {
+            .bnx-dg-badge {
                 display: inline-block;
                 padding: var(--spacing-1, 0.25rem) var(--spacing-2, 0.5rem);
                 font-size: var(--text-size-xs, 0.75rem);
@@ -693,43 +761,43 @@ class BnxDataGrid extends HTMLElement {
                 letter-spacing: 0.05em;
             }
 
-            .badge-default {
+            .bnx-dg-badge-default {
                 background: var(--color-gray-100, #f3f4f6);
                 color: var(--color-gray-700, #374151);
             }
 
-            .badge-blue {
+            .bnx-dg-badge-blue {
                 background: hsl(217, 91%, 95%);
                 color: hsl(217, 91%, 45%);
             }
 
-            .badge-green {
+            .bnx-dg-badge-green {
                 background: hsl(142, 76%, 94%);
                 color: hsl(142, 71%, 29%);
             }
 
-            .badge-amber {
+            .bnx-dg-badge-amber {
                 background: hsl(45, 93%, 94%);
                 color: hsl(45, 93%, 35%);
             }
 
-            .badge-red {
+            .bnx-dg-badge-red {
                 background: hsl(0, 84%, 95%);
                 color: hsl(0, 84%, 40%);
             }
 
-            .badge-purple {
+            .bnx-dg-badge-purple {
                 background: hsl(270, 76%, 94%);
                 color: hsl(270, 71%, 45%);
             }
 
-            .badge-emerald {
+            .bnx-dg-badge-emerald {
                 background: hsl(160, 84%, 92%);
                 color: hsl(160, 84%, 30%);
             }
 
             /* ========== EMPTY STATE ========== */
-            .empty-state {
+            .bnx-dg-empty-state {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
