@@ -40,14 +40,18 @@
     /* Orange (warm action) */
     --orange-50:  33 100% 96%;
     --orange-100: 34 100% 92%;
+    --orange-400: 27 96% 61%;
     --orange-500: 25 95% 53%;
     --orange-600: 21 90% 48%;
+    --orange-700: 17 88% 40%;
 
     /* Emerald (success/positive) */
     --emerald-50:  152 81% 96%;
     --emerald-100: 149 80% 90%;
+    --emerald-400: 158 64% 52%;
     --emerald-500: 160 84% 39%;
     --emerald-600: 161 94% 30%;
+    --emerald-700: 163 94% 24%;
 
     /* Green (confirm/active) */
     --green-50:  138 76% 97%;
@@ -71,6 +75,8 @@
     /* Red (danger/error) */
     --red-50:  0 86% 97%;
     --red-100: 0 93% 94%;
+    --red-300: 0 94% 82%;
+    --red-400: 0 91% 71%;
     --red-500: 0 84% 60%;
     --red-600: 0 72% 51%;
 
