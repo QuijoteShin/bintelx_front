@@ -1,4 +1,11 @@
 // src/bnx/api.js
+// Cliente API con auto-unwrap de respuestas
+//
+// USO:
+//   import { api } from '../../bnx/api.js';
+//   const res = await api.get('/endpoint.json');
+//   if (res?.d?.success) { ... }
+//
 // Auto-unwrap: Si el backend retorna {data: {...}}, se sube de nivel a response.d
 // Esto permite encapsular payloads en "data" por convencion y el frontend accede directo.
 // Ej: Backend retorna {success: true, data: {user: ...}}
