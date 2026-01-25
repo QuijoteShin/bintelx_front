@@ -158,6 +158,12 @@ module.exports = (envArgs, argv) => {
         },
       ],
     },
+    resolve: {
+      alias: {
+        '@bnx': path.resolve(__dirname, 'src/bnx'),
+        '@apps': path.resolve(__dirname, 'src/apps'),
+      },
+    },
     optimization: {
       splitChunks: {
         chunks: 'all',
