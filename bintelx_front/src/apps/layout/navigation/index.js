@@ -1,8 +1,8 @@
 // src/apps/layout/navigation/index.js
-import { api } from '../../../bnx/api.js';
-import { devlog } from '../../../bnx/utils.js';
-import { authFlow } from '../../../bnx/auth.js';
-import { localRoutesHint } from '../../../bnx/router.js';
+import { api } from '@bnx/api.js';
+import { devlog } from '@bnx/utils.js';
+import { authFlow } from '@bnx/auth.js';
+import { localRoutesHint } from '@bnx/router.js';
 import './index.css';
 
 const AVATAR_PATTERNS = [

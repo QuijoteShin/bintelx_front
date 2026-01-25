@@ -1,8 +1,8 @@
 // src/apps/_profile/selector/index.js
-import { api } from '../../../bnx/api.js';
-import { devlog } from '../../../bnx/utils.js';
-import { navigate } from '../../../bnx/router.js';
-import { authFlow } from '../../../bnx/auth.js';
+import { api } from '@bnx/api.js';
+import { devlog } from '@bnx/utils.js';
+import { navigate } from '@bnx/router.js';
+import { authFlow } from '@bnx/auth.js';
 
 export default async function(container, data) {
     const scopeList = container.querySelector('#scopeList');

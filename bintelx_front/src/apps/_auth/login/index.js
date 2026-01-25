@@ -1,8 +1,8 @@
 // bnx/apps/_auth/login/index.js
-import { devlog } from '../../../bnx/utils.js';
-import { authFlow } from '../../../bnx/auth.js';
+import { devlog } from '@bnx/utils.js';
+import { authFlow } from '@bnx/auth.js';
 import { config } from '../../../config.js';
-import { loadContentIntoElement } from '../../../bnx/loader.js';
+import { loadContentIntoElement } from '@bnx/loader.js';
 
 export default function(container, data) {
   const form = container.querySelector('#login-form');

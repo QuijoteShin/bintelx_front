@@ -1,6 +1,6 @@
 /* src/apps/_auth/register/index.js */
-import { devlog } from '../../../bnx/utils.js';
-import '../../../bnx/components/stepper/Stepper';
+import { devlog } from '@bnx/utils.js';
+import '@bnx/components/stepper/Stepper';
 
 export default async function(container, data) {
     const stepper = container.querySelector('#register-stepper');

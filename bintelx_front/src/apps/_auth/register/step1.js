@@ -1,6 +1,6 @@
 // /src/apps/_auth/register/step1.js
-import { api } from '../../../bnx/api.js';
-import { authFlow } from '../../../bnx/auth.js';
+import { api } from '@bnx/api.js';
+import { authFlow } from '@bnx/auth.js';
 import { config } from '../../../config.js';
 
 export default function(stepElement, data) {
