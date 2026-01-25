@@ -27,8 +27,27 @@ const templateHelpers = {
   capitalize: (text) => {
     if (!text) return '';
     return text.charAt(0).toUpperCase() + text.slice(1);
+  },
+  escape: (str) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+  formatCurrency: (val, locale = 'es-CL') => {
+    const num = Math.round(parseFloat(val) || 0);
+    return '$' + num.toLocaleString(locale);
+  },
+  formatNumber: (num, locale = 'es-CL') => {
+    return (parseFloat(num) || 0).toLocaleString(locale);
   }
 };
+
+// Export helpers for direct use in modules
+export const helpers = templateHelpers;
 
 
 /**
