@@ -1,4 +1,5 @@
 // src/bnx/components/data-grid/DataGrid.js
+// DataGrid v2 - Event Delegation + Editor Overlay + HTML5 Validation
 
 class BnxDataGrid extends HTMLElement {
     static _stylesInjected = false;
@@ -7,14 +8,17 @@ class BnxDataGrid extends HTMLElement {
         super();
         this._data = [];
         this._columns = [];
-        this._cardTemplate = null;
-        this._editableColumns = new Set();
         this._newRowTemplate = null;
-        this._pendingArrowDowns = 0;
-        this._lastArrowDownTime = 0;
-        this._pendingCtrlDeletes = 0;
-        this._lastCtrlDeleteTime = 0;
-        this._isEditing = false;
+        this._cardTemplate = null;
+
+        // Editor overlay state
+        this._activeEditor = null;
+        this._editingCell = null;
+
+        // Double-press detection
+        this._lastArrowDown = { time: 0, count: 0 };
+        this._lastCtrlDelete = { time: 0, count: 0 };
+        this._lastShiftDelete = { time: 0, count: 0 };
     }
 
     static get observedAttributes() {
@@ -24,12 +28,17 @@ class BnxDataGrid extends HTMLElement {
     connectedCallback() {
         this._injectStyles();
         this.render();
-        this._setupKeyboardNavigation();
+        this._attachDelegatedListeners();
+    }
+
+    disconnectedCallback() {
+        this._removeEditor();
     }
 
     attributeChangedCallback() {
-        if (this.innerHTML) {
+        if (this.isConnected) {
             this.render();
+            this._attachDelegatedListeners();
         }
     }
 
@@ -45,83 +54,43 @@ class BnxDataGrid extends HTMLElement {
         return this.getAttribute('row-key') || 'id';
     }
 
-    // --- Public API ---
-
-    // Focus management para popovers
-    saveFocus() {
-        const active = this.querySelector('td:focus');
-        if (active) {
-            this._savedFocus = {
-                row: parseInt(active.dataset.row),
-                col: parseInt(active.dataset.col)
-            };
-        }
-        return this._savedFocus;
-    }
-
-    restoreFocus() {
-        if (!this._savedFocus) return false;
-        const { row, col } = this._savedFocus;
-        return this.focusCell(row, col);
-    }
-
-    focusCell(rowIdx, colIdx) {
-        const cell = this.querySelector(`td[data-row="${rowIdx}"][data-col="${colIdx}"]`);
-        if (cell) {
-            cell.focus();
-            return true;
-        }
-        return false;
-    }
-
-    getActiveCell() {
-        const active = this.querySelector('td:focus');
-        if (!active) return null;
-        return {
-            row: parseInt(active.dataset.row),
-            col: parseInt(active.dataset.col),
-            key: active.dataset.key,
-            element: active
-        };
-    }
+    // === Public API ===
 
     setColumns(columns) {
-        // columns: [{ key, label, type, editable, width, align, format, badge }]
-        this._columns = columns;
-        this._editableColumns = new Set(
-            columns.filter(c => c.editable).map(c => c.key)
-        );
+        this._columns = columns.map(col => ({
+            ...col,
+            editable: col.editable ?? false,
+            type: col.type || 'text',
+            align: col.align || (col.type === 'number' || col.type === 'currency' ? 'right' : 'left')
+        }));
         this.render();
+        this._attachDelegatedListeners();
     }
 
     setData(data, options = {}) {
-        const activeCell = this.getActiveCell();
-        const wasEditing = this._isEditing;
+        const wasEditing = !!this._activeEditor;
 
-        this._data = Array.isArray(data) ? data : [];
-
-        // Skip render if actively editing and preserveFocus not explicitly false
+        // Si estamos editando y no se fuerza refresh, solo actualizar datos internos
         if (wasEditing && options.preserveFocus !== false) {
-            // Just update internal data, don't re-render
+            this._data = Array.isArray(data) ? [...data] : [];
             return;
         }
 
+        this._removeEditor();
+        this._data = Array.isArray(data) ? [...data] : [];
         this.render();
-
-        // Restore focus if there was an active cell
-        if (activeCell && options.preserveFocus !== false) {
-            requestAnimationFrame(() => {
-                this.focusCell(activeCell.row, activeCell.col);
-            });
-        }
+        this._attachDelegatedListeners();
     }
 
     getData() {
         return this._data;
     }
 
+    setNewRowTemplate(templateFn) {
+        this._newRowTemplate = templateFn;
+    }
+
     setCardTemplate(templateFn) {
-        // templateFn: (item, index) => HTML string
         this._cardTemplate = templateFn;
         if (this.mode === 'cards') {
             this.render();
@@ -130,64 +99,84 @@ class BnxDataGrid extends HTMLElement {
 
     addRow(row) {
         this._data.push(row);
-        this.render();
-    }
-
-    updateRow(key, updates) {
-        const idx = this._data.findIndex(r => r[this.rowKey] === key);
-        if (idx !== -1) {
-            this._data[idx] = { ...this._data[idx], ...updates };
+        const tbody = this.querySelector('tbody');
+        if (tbody && this.mode === 'spreadsheet') {
+            const tr = this._createRowElement(row, this._data.length - 1);
+            tbody.appendChild(tr);
+            this._removeEmptyState();
+        } else {
             this.render();
         }
     }
 
-    deleteRow(key) {
-        this._data = this._data.filter(r => r[this.rowKey] !== key);
-        this.render();
-    }
+    updateRow(key, updates) {
+        const idx = this._data.findIndex(r => r[this.rowKey] === key);
+        if (idx === -1) return;
 
-    setNewRowTemplate(templateFn) {
-        // templateFn: () => { id: 'new_123', name: '', ... }
-        this._newRowTemplate = templateFn;
-    }
+        this._data[idx] = { ...this._data[idx], ...updates };
 
-    createNewRow(focusFirstEditable = true) {
-        let newRow;
-        if (this._newRowTemplate) {
-            newRow = this._newRowTemplate();
-        } else {
-            // Default: empty row with generated id
-            newRow = { [this.rowKey]: `_new_${Date.now()}` };
-            this._columns.forEach(col => {
-                if (col.key !== this.rowKey) {
-                    newRow[col.key] = col.type === 'number' || col.type === 'currency' ? 0 : '';
+        // Render incremental: actualizar solo las celdas afectadas
+        const tr = this.querySelector(`tr[data-row-key="${key}"]`);
+        if (tr) {
+            Object.keys(updates).forEach(colKey => {
+                const td = tr.querySelector(`td[data-key="${colKey}"]`);
+                if (td) {
+                    const col = this._columns.find(c => c.key === colKey);
+                    const formatted = this._formatValue(updates[colKey], col);
+                    if (this._isHtmlColumn(col)) {
+                        td.innerHTML = formatted;
+                    } else {
+                        td.textContent = formatted;
+                    }
                 }
             });
         }
+    }
 
-        // Mark as new (created by grid, not from backend)
+    deleteRow(key) {
+        const idx = this._data.findIndex(r => r[this.rowKey] === key);
+        if (idx === -1) return;
+
+        this._data.splice(idx, 1);
+
+        // Render incremental: remover solo la fila
+        const tr = this.querySelector(`tr[data-row-key="${key}"]`);
+        if (tr) {
+            tr.remove();
+            this._reindexRows();
+            if (this._data.length === 0) this._showEmptyState();
+        }
+    }
+
+    createNewRow(focusFirstEditable = true) {
+        const newRow = this._newRowTemplate
+            ? this._newRowTemplate()
+            : this._createDefaultRow();
+
         newRow._isNew = true;
         newRow._createdAt = new Date().toISOString();
 
         this._data.push(newRow);
-        this.render();
 
-        // Dispatch event
+        const tbody = this.querySelector('tbody');
+        if (tbody && this.mode === 'spreadsheet') {
+            const tr = this._createRowElement(newRow, this._data.length - 1);
+            tbody.appendChild(tr);
+            this._removeEmptyState();
+        } else {
+            this.render();
+        }
+
         this.dispatchEvent(new CustomEvent('row-created', {
             bubbles: true,
-            detail: {
-                row: newRow,
-                rowIndex: this._data.length - 1
-            }
+            detail: { row: newRow, rowIndex: this._data.length - 1 }
         }));
 
-        // Focus first editable cell in new row
         if (focusFirstEditable) {
             requestAnimationFrame(() => {
-                const newRowIdx = this._data.length - 1;
                 const firstEditableCol = this._columns.findIndex(c => c.editable);
                 if (firstEditableCol !== -1) {
-                    this.focusCell(newRowIdx, firstEditableCol);
+                    this.focusCell(this._data.length - 1, firstEditableCol);
                 }
             });
         }
@@ -195,84 +184,163 @@ class BnxDataGrid extends HTMLElement {
         return newRow;
     }
 
-    // --- Styles Injection (once per document) ---
+    focusCell(rowIdx, colIdx, openEditor = true) {
+        const cell = this.querySelector(`td[data-row="${rowIdx}"][data-col="${colIdx}"]`);
+        if (cell) {
+            // Quitar selección previa
+            this.querySelectorAll('td.bnx-dg-cell-selected').forEach(c => {
+                c.classList.remove('bnx-dg-cell-selected');
+            });
+            cell.classList.add('bnx-dg-cell-selected');
+            cell.focus();
 
-    _injectStyles() {
-        if (BnxDataGrid._stylesInjected) return;
-
-        const style = document.createElement('style');
-        style.id = 'bnx-data-grid-styles';
-        style.textContent = this._getStyles();
-        document.head.appendChild(style);
-        BnxDataGrid._stylesInjected = true;
+            if (openEditor) {
+                const col = this._columns[colIdx];
+                if (col?.editable) {
+                    this._showEditor(cell, rowIdx, colIdx);
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
-    // --- Rendering ---
+    getActiveCell() {
+        if (!this._editingCell) return null;
+        return {
+            row: parseInt(this._editingCell.dataset.row),
+            col: parseInt(this._editingCell.dataset.col),
+            key: this._editingCell.dataset.key,
+            element: this._editingCell
+        };
+    }
+
+    saveFocus() {
+        const active = this.getActiveCell();
+        if (active) {
+            this._savedFocus = { row: active.row, col: active.col };
+        }
+        return this._savedFocus;
+    }
+
+    restoreFocus() {
+        if (!this._savedFocus) return false;
+        return this.focusCell(this._savedFocus.row, this._savedFocus.col);
+    }
+
+    // === Rendering ===
 
     render() {
-        const content = this.mode === 'cards'
-            ? this._renderCards()
-            : this._renderSpreadsheet();
+        if (this.mode === 'cards') {
+            this.innerHTML = this._renderCards();
+            return;
+        }
 
         this.innerHTML = `
-            <div class="bnx-data-grid bnx-data-grid--${this.mode}">
-                ${content}
-            </div>
-        `;
-
-        if (this.mode === 'spreadsheet') {
-            this._attachSpreadsheetListeners();
-        } else {
-            this._attachCardListeners();
-        }
-    }
-
-    _renderSpreadsheet() {
-        if (!this._columns.length) {
-            return '<div class="bnx-dg-empty-state">No columns defined</div>';
-        }
-
-        const headerCells = this._columns.map(col => {
-            const align = col.align || (col.type === 'number' ? 'right' : 'left');
-            const editableClass = col.editable ? 'bnx-dg-col-editable' : '';
-            const width = col.width ? `width: ${col.width};` : '';
-            return `<th class="${editableClass}" style="text-align: ${align}; ${width}">${col.label}</th>`;
-        }).join('');
-
-        const rows = this._data.map((row, rowIdx) => {
-            const cells = this._columns.map((col, colIdx) => {
-                const value = row[col.key] ?? '';
-                const align = col.align || (col.type === 'number' ? 'right' : 'left');
-                const editable = col.editable ? 'contenteditable="true"' : '';
-                const editableClass = col.editable ? 'bnx-dg-cell-editable' : '';
-                const formatted = this._formatValue(value, col);
-
-                return `<td
-                    class="${editableClass} bnx-dg-cell-${col.type || 'text'}"
-                    style="text-align: ${align};"
-                    data-row="${rowIdx}"
-                    data-col="${colIdx}"
-                    data-key="${col.key}"
-                    ${editable}
-                >${formatted}</td>`;
-            }).join('');
-
-            return `<tr data-row-idx="${rowIdx}" data-row-key="${row[this.rowKey] || rowIdx}">${cells}</tr>`;
-        }).join('');
-
-        return `
-            <div class="bnx-dg-spreadsheet-container">
-                <table class="bnx-dg-spreadsheet">
-                    <thead>
-                        <tr>${headerCells}</tr>
-                    </thead>
-                    <tbody>
-                        ${rows || '<tr><td colspan="' + this._columns.length + '" class="bnx-dg-empty-row">Sin datos</td></tr>'}
-                    </tbody>
-                </table>
+            <div class="bnx-data-grid">
+                <div class="bnx-dg-spreadsheet-container">
+                    <table class="bnx-dg-spreadsheet">
+                        <thead><tr>${this._renderHeaders()}</tr></thead>
+                        <tbody>${this._renderRows()}</tbody>
+                    </table>
+                </div>
             </div>
         `;
     }
+
+    _renderHeaders() {
+        return this._columns.map(col => {
+            const style = `text-align:${col.align};${col.width ? `width:${col.width};` : ''}`;
+            const cls = col.editable ? 'bnx-dg-col-editable' : '';
+            return `<th class="${cls}" style="${style}">${col.label}</th>`;
+        }).join('');
+    }
+
+    _renderRows() {
+        if (!this._data.length) {
+            return `<tr class="bnx-dg-empty-row"><td colspan="${this._columns.length}">Sin datos</td></tr>`;
+        }
+        return this._data.map((row, idx) => this._renderRow(row, idx)).join('');
+    }
+
+    _renderRow(row, rowIdx) {
+        const cells = this._columns.map((col, colIdx) => {
+            const value = row[col.key] ?? '';
+            const formatted = this._formatValue(value, col);
+            const cls = [
+                `bnx-dg-cell-${col.type}`,
+                col.editable ? 'bnx-dg-cell-editable' : ''
+            ].filter(Boolean).join(' ');
+
+            return `<td class="${cls}"
+                       style="text-align:${col.align};"
+                       data-row="${rowIdx}"
+                       data-col="${colIdx}"
+                       data-key="${col.key}"
+                       tabindex="${col.editable ? 0 : -1}">${formatted}</td>`;
+        }).join('');
+
+        return `<tr data-row-idx="${rowIdx}" data-row-key="${row[this.rowKey] || rowIdx}">${cells}</tr>`;
+    }
+
+    _createRowElement(row, rowIdx) {
+        const tr = document.createElement('tr');
+        tr.dataset.rowIdx = rowIdx;
+        tr.dataset.rowKey = row[this.rowKey] || rowIdx;
+
+        this._columns.forEach((col, colIdx) => {
+            const td = document.createElement('td');
+            td.className = `bnx-dg-cell-${col.type}${col.editable ? ' bnx-dg-cell-editable' : ''}`;
+            td.style.textAlign = col.align;
+            td.dataset.row = rowIdx;
+            td.dataset.col = colIdx;
+            td.dataset.key = col.key;
+            td.tabIndex = col.editable ? 0 : -1;
+
+            const formatted = this._formatValue(row[col.key] ?? '', col);
+            if (this._isHtmlColumn(col)) {
+                td.innerHTML = formatted;
+            } else {
+                td.textContent = formatted;
+            }
+            tr.appendChild(td);
+        });
+
+        return tr;
+    }
+
+    _createDefaultRow() {
+        const row = { [this.rowKey]: `_new_${Date.now()}` };
+        this._columns.forEach(col => {
+            if (col.key !== this.rowKey) {
+                row[col.key] = (col.type === 'number' || col.type === 'currency') ? 0 : '';
+            }
+        });
+        return row;
+    }
+
+    _reindexRows() {
+        this.querySelectorAll('tbody tr').forEach((tr, idx) => {
+            tr.dataset.rowIdx = idx;
+            tr.querySelectorAll('td').forEach(td => {
+                td.dataset.row = idx;
+            });
+        });
+    }
+
+    _showEmptyState() {
+        const tbody = this.querySelector('tbody');
+        if (tbody && !tbody.querySelector('.bnx-dg-empty-row')) {
+            tbody.innerHTML = `<tr class="bnx-dg-empty-row"><td colspan="${this._columns.length}">Sin datos</td></tr>`;
+        }
+    }
+
+    _removeEmptyState() {
+        const empty = this.querySelector('.bnx-dg-empty-row');
+        if (empty) empty.remove();
+    }
+
+    // === Cards Mode ===
 
     _renderCards() {
         if (!this._data.length) {
@@ -280,43 +348,37 @@ class BnxDataGrid extends HTMLElement {
         }
 
         const cards = this._data.map((item, idx) => {
-            if (this._cardTemplate) {
-                return `<div class="bnx-dg-card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
-                    ${this._cardTemplate(item, idx)}
-                </div>`;
-            }
-            return this._renderDefaultCard(item, idx);
+            const content = this._cardTemplate
+                ? this._cardTemplate(item, idx)
+                : this._renderDefaultCard(item);
+            return `<div class="bnx-dg-card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">${content}</div>`;
         }).join('');
 
         return `<div class="bnx-dg-cards-grid">${cards}</div>`;
     }
 
-    _renderDefaultCard(item, idx) {
+    _renderDefaultCard(item) {
         const title = this._columns[0] ? item[this._columns[0].key] : 'Item';
-        const fields = this._columns.slice(1).map(col => {
-            const value = this._formatValue(item[col.key], col);
-            return `<div class="bnx-dg-card-field">
+        const fields = this._columns.slice(1).map(col => `
+            <div class="bnx-dg-card-field">
                 <span class="bnx-dg-card-field-label">${col.label}</span>
-                <span class="bnx-dg-card-field-value">${value}</span>
-            </div>`;
-        }).join('');
-
-        return `<div class="bnx-dg-card" data-card-idx="${idx}" data-card-key="${item[this.rowKey] || idx}">
-            <div class="bnx-dg-card-header">
-                <h4 class="bnx-dg-card-title">${title}</h4>
+                <span class="bnx-dg-card-field-value">${this._formatValue(item[col.key], col)}</span>
             </div>
+        `).join('');
+
+        return `
+            <div class="bnx-dg-card-header"><h4 class="bnx-dg-card-title">${title}</h4></div>
             <div class="bnx-dg-card-body">${fields}</div>
-        </div>`;
+        `;
     }
+
+    // === Formatting ===
 
     _formatValue(value, col) {
         if (value === null || value === undefined) return '';
+        if (col?.format) return col.format(value);
 
-        if (col.format && typeof col.format === 'function') {
-            return col.format(value);
-        }
-
-        switch (col.type) {
+        switch (col?.type) {
             case 'number':
                 return this._formatNumber(value);
             case 'currency':
@@ -325,254 +387,297 @@ class BnxDataGrid extends HTMLElement {
                 return this._formatDate(value);
             case 'badge':
                 return this._formatBadge(value, col.badge);
+            case 'action':
+            case 'html':
+                // No escapar - renderiza HTML directo
+                return String(value);
             default:
-                return value;
+                return this._escapeHtml(String(value));
         }
+    }
+
+    _isHtmlColumn(col) {
+        return col?.type === 'action' || col?.type === 'html' || !!col?.format;
     }
 
     _formatNumber(value) {
         const num = parseFloat(value);
-        if (isNaN(num)) return value;
-        return num.toLocaleString('es-CL');
+        return isNaN(num) ? value : num.toLocaleString('es-CL');
     }
 
     _formatCurrency(value) {
         const num = parseFloat(value);
-        if (isNaN(num)) return value;
-        return '$' + num.toLocaleString('es-CL');
+        return isNaN(num) ? value : '$' + num.toLocaleString('es-CL');
     }
 
     _formatDate(value) {
         try {
             const date = new Date(value);
+            if (isNaN(date.getTime())) return value;
             return date.toLocaleDateString('es-CL');
         } catch {
             return value;
         }
     }
 
-    _formatBadge(value, badgeConfig = {}) {
-        const colorMap = badgeConfig.colors || {};
-        const color = colorMap[value] || 'default';
-        return `<span class="bnx-dg-badge bnx-dg-badge-${color}">${value}</span>`;
+    _formatBadge(value, config = {}) {
+        const color = config.colors?.[value] || 'default';
+        return `<span class="bnx-dg-badge bnx-dg-badge-${color}">${this._escapeHtml(String(value))}</span>`;
     }
 
-    // --- Event Listeners ---
-
-    _attachSpreadsheetListeners() {
-        const cells = this.querySelectorAll('td[contenteditable="true"]');
-
-        cells.forEach(cell => {
-            cell.addEventListener('input', (e) => this._handleCellInput(e));
-            cell.addEventListener('blur', (e) => this._handleCellBlur(e));
-            cell.addEventListener('focus', (e) => this._handleCellFocus(e));
-        });
-
-        // Cell click event for all cells (editable or not)
-        const allCells = this.querySelectorAll('tbody td');
-        allCells.forEach(cell => {
-            cell.addEventListener('click', (e) => this._handleCellClick(e, cell));
-        });
-
-        const rows = this.querySelectorAll('tbody tr');
-        rows.forEach(row => {
-            row.addEventListener('click', (e) => {
-                if (!e.target.hasAttribute('contenteditable')) {
-                    this._handleRowClick(e, row);
-                }
-            });
-        });
+    _escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
-    _handleCellClick(e, cell) {
+    // === Event Delegation ===
+
+    _attachDelegatedListeners() {
+        const table = this.querySelector('table');
+        if (!table) return;
+
+        // Remover listeners previos
+        if (this._boundHandlers) {
+            table.removeEventListener('click', this._boundHandlers.click);
+            table.removeEventListener('dblclick', this._boundHandlers.dblclick);
+            table.removeEventListener('keydown', this._boundHandlers.keydown);
+            table.removeEventListener('focusin', this._boundHandlers.focusin);
+        }
+
+        // Crear handlers bound
+        this._boundHandlers = {
+            click: this._handleTableClick.bind(this),
+            dblclick: this._handleTableDblClick.bind(this),
+            keydown: this._handleTableKeydown.bind(this),
+            focusin: this._handleTableFocusin.bind(this)
+        };
+
+        table.addEventListener('click', this._boundHandlers.click);
+        table.addEventListener('dblclick', this._boundHandlers.dblclick);
+        table.addEventListener('keydown', this._boundHandlers.keydown);
+        table.addEventListener('focusin', this._boundHandlers.focusin);
+    }
+
+    _handleTableClick(e) {
+        const cell = e.target.closest('td');
+        if (!cell) return;
+
         const rowIdx = parseInt(cell.dataset.row);
         const colIdx = parseInt(cell.dataset.col);
-        const key = cell.dataset.key;
+        const col = this._columns[colIdx];
 
+        // Dispatch cell-click para todos
         this.dispatchEvent(new CustomEvent('cell-click', {
             bubbles: true,
             detail: {
                 rowIndex: rowIdx,
                 colIndex: colIdx,
-                column: key,
+                column: col?.key,
                 row: this._data[rowIdx],
                 cellElement: cell,
                 originalEvent: e
             }
         }));
-    }
 
-    _attachCardListeners() {
-        const cards = this.querySelectorAll('.bnx-dg-card');
-        cards.forEach(card => {
-            card.addEventListener('click', (e) => this._handleCardClick(e, card));
-        });
-    }
-
-    _handleCellInput(e) {
-        const cell = e.target;
-        const rowIdx = parseInt(cell.dataset.row);
-        const key = cell.dataset.key;
-        const col = this._columns.find(c => c.key === key);
-        let value = cell.innerText.trim();
-
-        // Parse number types
-        if (col?.type === 'number' || col?.type === 'currency') {
-            value = parseFloat(value.replace(/[$,\.]/g, '').replace(',', '.')) || 0;
+        // Row select si no es editable
+        if (!col?.editable && this.selectable) {
+            const tr = cell.closest('tr');
+            this.dispatchEvent(new CustomEvent('row-select', {
+                bubbles: true,
+                detail: {
+                    rowIndex: rowIdx,
+                    rowKey: tr?.dataset.rowKey,
+                    row: this._data[rowIdx]
+                }
+            }));
         }
-
-        // Update internal data
-        if (this._data[rowIdx]) {
-            this._data[rowIdx][key] = value;
-        }
-
-        // Dispatch event
-        this.dispatchEvent(new CustomEvent('cell-change', {
-            bubbles: true,
-            detail: {
-                rowIndex: rowIdx,
-                rowKey: this._data[rowIdx]?.[this.rowKey],
-                column: key,
-                value: value,
-                row: this._data[rowIdx]
-            }
-        }));
     }
 
-    _handleCellBlur(e) {
-        this._isEditing = false;
-        e.target.classList.remove('bnx-dg-cell-focused');
+    _handleTableDblClick(e) {
+        const cell = e.target.closest('td');
+        if (!cell) return;
 
-        const cell = e.target;
-        const rowIdx = parseInt(cell.dataset.row);
-        const key = cell.dataset.key;
+        const colIdx = parseInt(cell.dataset.col);
+        const col = this._columns[colIdx];
 
-        // Delay blur event to check if focus moved to another cell in same grid
-        // This prevents recalc during keyboard navigation
-        setTimeout(() => {
-            const newFocus = document.activeElement;
-            const stillInGrid = this.contains(newFocus) && newFocus.matches('td[contenteditable="true"]');
-
-            // Only dispatch blur if focus left the grid entirely
-            if (!stillInGrid) {
-                this.dispatchEvent(new CustomEvent('cell-blur', {
-                    bubbles: true,
-                    detail: {
-                        rowIndex: rowIdx,
-                        rowKey: this._data[rowIdx]?.[this.rowKey],
-                        column: key,
-                        row: this._data[rowIdx]
-                    }
-                }));
-            }
-        }, 10);
-    }
-
-    _handleCellFocus(e) {
-        this._isEditing = true;
-        const cell = e.target;
-        cell.classList.add('bnx-dg-cell-focused');
-
-        // Select all text on focus
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(cell);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    }
-
-    _handleRowClick(e, row) {
-        if (!this.selectable) return;
-
-        const rowIdx = parseInt(row.dataset.rowIdx);
-        const rowKey = row.dataset.rowKey;
-
-        this.dispatchEvent(new CustomEvent('row-select', {
-            bubbles: true,
-            detail: {
-                rowIndex: rowIdx,
-                rowKey: rowKey,
-                row: this._data[rowIdx]
-            }
-        }));
-    }
-
-    _handleCardClick(e, card) {
-        const idx = parseInt(card.dataset.cardIdx);
-        const key = card.dataset.cardKey;
-
-        this.dispatchEvent(new CustomEvent('card-click', {
-            bubbles: true,
-            detail: {
-                index: idx,
-                key: key,
-                item: this._data[idx]
-            }
-        }));
-    }
-
-    // --- Keyboard Navigation ---
-
-    _setupKeyboardNavigation() {
-        this.addEventListener('keydown', (e) => {
-            if (this.mode !== 'spreadsheet') return;
-
-            const cell = e.target.closest('td[contenteditable="true"]');
-            if (!cell) return;
-
-            // Handle Ctrl+Delete for row deletion (double press)
-            if (e.key === 'Delete' && e.ctrlKey) {
-                e.preventDefault();
-                this._handleCtrlDelete(cell);
-                return;
-            }
-
-            if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key)) return;
-
-            const selection = window.getSelection();
-            if (selection.rangeCount === 0) return;
-            const range = selection.getRangeAt(0);
-
-            // Allow normal text navigation when text is selected
-            if (!range.collapsed) return;
-
-            const isAtStart = this._isCursorAtStart(cell, range);
-            const isAtEnd = this._isCursorAtEnd(cell, range);
-
-            if (e.key === 'ArrowUp' && isAtStart) {
-                this._navigateVertical(cell, -1, e);
-            } else if (e.key === 'ArrowDown' && isAtEnd) {
-                this._navigateVertical(cell, 1, e);
-            } else if (e.key === 'ArrowLeft' && isAtStart) {
-                this._navigateHorizontal(cell, -1, e);
-            } else if (e.key === 'ArrowRight' && isAtEnd) {
-                this._navigateHorizontal(cell, 1, e);
-            } else if (e.key === 'Tab') {
-                this._navigateHorizontal(cell, e.shiftKey ? -1 : 1, e);
-            } else if (e.key === 'Enter' && !e.shiftKey) {
-                this._navigateVertical(cell, 1, e);
-            }
-        });
-    }
-
-    _handleCtrlDelete(cell) {
-        const now = Date.now();
-        const timeSinceLastCtrlDel = now - this._lastCtrlDeleteTime;
-
-        // Reset counter if more than 500ms since last Ctrl+Delete
-        if (timeSinceLastCtrlDel > 500) {
-            this._pendingCtrlDeletes = 0;
-        }
-
-        this._pendingCtrlDeletes++;
-        this._lastCtrlDeleteTime = now;
-
-        // On second Ctrl+Delete within 500ms, delete the row
-        if (this._pendingCtrlDeletes >= 2) {
-            this._pendingCtrlDeletes = 0;
+        if (col?.editable) {
             const rowIdx = parseInt(cell.dataset.row);
-            this._deleteRowAtIndex(rowIdx);
+            this._showEditor(cell, rowIdx, colIdx);
         }
+    }
+
+    _handleTableFocusin(e) {
+        const cell = e.target.closest('td');
+        if (!cell) return;
+
+        // Solo marcar como seleccionada, NO abrir editor
+        // Editor se abre solo con double-click o Enter
+        this.querySelectorAll('td.bnx-dg-cell-selected').forEach(c => {
+            c.classList.remove('bnx-dg-cell-selected');
+        });
+        cell.classList.add('bnx-dg-cell-selected');
+    }
+
+    _handleTableKeydown(e) {
+        const cell = e.target.closest('td');
+        if (!cell) return;
+
+        const rowIdx = parseInt(cell.dataset.row);
+        const colIdx = parseInt(cell.dataset.col);
+
+        // Ctrl+Delete: eliminar fila (doble press)
+        if (e.key === 'Delete' && e.ctrlKey) {
+            e.preventDefault();
+            this._handleDoublePress(this._lastCtrlDelete, () => {
+                this._deleteRowAtIndex(rowIdx);
+            });
+            return;
+        }
+
+        // Shift+Delete: eliminar fila (doble press) - alternativa
+        if (e.key === 'Delete' && e.shiftKey && !e.ctrlKey) {
+            e.preventDefault();
+            this._handleDoublePress(this._lastShiftDelete, () => {
+                this._deleteRowAtIndex(rowIdx);
+            });
+            return;
+        }
+
+        // Navegación
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                this._navigateVertical(rowIdx, colIdx, -1);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                this._handleArrowDown(rowIdx, colIdx);
+                break;
+            case 'ArrowLeft':
+                if (!this._activeEditor) {
+                    e.preventDefault();
+                    this._navigateHorizontal(rowIdx, colIdx, -1, true);
+                }
+                break;
+            case 'ArrowRight':
+                if (!this._activeEditor) {
+                    e.preventDefault();
+                    this._navigateHorizontal(rowIdx, colIdx, 1, true);
+                }
+                break;
+            case 'Tab':
+                e.preventDefault();
+                this._navigateHorizontal(rowIdx, colIdx, e.shiftKey ? -1 : 1);
+                break;
+            case 'Enter':
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    if (this._activeEditor) {
+                        this._commitEditor();
+                        this._navigateVertical(rowIdx, colIdx, 1);
+                    } else {
+                        // Enter sin editor activo = abrir editor
+                        const col = this._columns[colIdx];
+                        if (col?.editable) {
+                            this._showEditor(cell, rowIdx, colIdx);
+                        }
+                    }
+                }
+                break;
+            case 'Escape':
+                if (this._activeEditor) {
+                    e.preventDefault();
+                    this._cancelEditor();
+                }
+                break;
+        }
+    }
+
+    _handleArrowDown(rowIdx, colIdx) {
+        const isLastRow = rowIdx === this._data.length - 1;
+
+        if (isLastRow) {
+            // Doble flecha abajo en última fila = crear nueva
+            this._handleDoublePress(this._lastArrowDown, () => {
+                this.createNewRow(true);
+            });
+        } else {
+            this._navigateVertical(rowIdx, colIdx, 1);
+            this._lastArrowDown = { time: 0, count: 0 };
+        }
+    }
+
+    _handleDoublePress(tracker, callback) {
+        const now = Date.now();
+        if (now - tracker.time < 500) {
+            tracker.count++;
+            if (tracker.count >= 2) {
+                callback();
+                tracker.time = 0;
+                tracker.count = 0;
+            }
+        } else {
+            tracker.time = now;
+            tracker.count = 1;
+        }
+    }
+
+    _navigateVertical(rowIdx, colIdx, direction) {
+        const newRow = rowIdx + direction;
+        if (newRow >= 0 && newRow < this._data.length) {
+            this._commitEditor();
+            // requestAnimationFrame para esperar posible re-render de cell-blur
+            requestAnimationFrame(() => {
+                this.focusCell(newRow, colIdx, false);
+            });
+        }
+    }
+
+    _navigateHorizontal(rowIdx, colIdx, direction, wrapInRow = false) {
+        const editableCols = this._columns
+            .map((col, idx) => col.editable ? idx : -1)
+            .filter(idx => idx !== -1);
+
+        if (!editableCols.length) return;
+
+        const currentEditableIdx = editableCols.indexOf(colIdx);
+        let newEditableIdx = currentEditableIdx + direction;
+        let newRowIdx = rowIdx;
+
+        if (wrapInRow) {
+            // Loop infinito dentro de la misma fila
+            if (newEditableIdx < 0) {
+                newEditableIdx = editableCols.length - 1;
+            } else if (newEditableIdx >= editableCols.length) {
+                newEditableIdx = 0;
+            }
+        } else {
+            // Tab/Shift+Tab: Wrap al siguiente/anterior fila
+            if (newEditableIdx < 0) {
+                if (rowIdx > 0) {
+                    newRowIdx = rowIdx - 1;
+                    newEditableIdx = editableCols.length - 1;
+                } else {
+                    newEditableIdx = 0;
+                }
+            } else if (newEditableIdx >= editableCols.length) {
+                if (rowIdx < this._data.length - 1) {
+                    newRowIdx = rowIdx + 1;
+                    newEditableIdx = 0;
+                } else {
+                    newEditableIdx = editableCols.length - 1;
+                }
+            }
+        }
+
+        this._commitEditor();
+        // requestAnimationFrame para esperar posible re-render de cell-blur
+        const targetRow = newRowIdx;
+        const targetCol = editableCols[newEditableIdx];
+        requestAnimationFrame(() => {
+            this.focusCell(targetRow, targetCol, false);
+        });
     }
 
     _deleteRowAtIndex(rowIdx) {
@@ -581,179 +686,461 @@ class BnxDataGrid extends HTMLElement {
         const deletedRow = this._data[rowIdx];
         const rowKey = deletedRow[this.rowKey];
 
-        // Remove from data
+        this._removeEditor();
         this._data.splice(rowIdx, 1);
 
-        // Dispatch event before re-render
         this.dispatchEvent(new CustomEvent('row-deleted', {
             bubbles: true,
-            detail: {
-                row: deletedRow,
-                rowIndex: rowIdx,
-                rowKey: rowKey
-            }
+            detail: { row: deletedRow, rowIndex: rowIdx, rowKey }
         }));
 
-        this._isEditing = false;
-        this.render();
+        const tr = this.querySelector(`tr[data-row-key="${rowKey}"]`);
+        if (tr) tr.remove();
 
-        // Focus previous row or first row
-        requestAnimationFrame(() => {
-            const newFocusRow = Math.max(0, rowIdx - 1);
-            if (this._data.length > 0) {
-                const firstEditableCol = this._columns.findIndex(c => c.editable);
-                if (firstEditableCol !== -1) {
-                    this.focusCell(newFocusRow, firstEditableCol);
-                }
-            }
-        });
-    }
+        this._reindexRows();
 
-    _isCursorAtStart(cell, range) {
-        if (range.startContainer === cell && range.startOffset === 0) return true;
-        if (range.startContainer.nodeType === Node.TEXT_NODE &&
-            range.startContainer === cell.firstChild &&
-            range.startOffset === 0) return true;
-        if (cell.innerText.trim() === '') return true;
-        return false;
-    }
-
-    _isCursorAtEnd(cell, range) {
-        if (cell.innerText.trim() === '') return true;
-        if (range.startContainer === cell && range.startOffset === cell.childNodes.length) return true;
-        if (range.startContainer.nodeType === Node.TEXT_NODE) {
-            const lastTextNode = this._getLastTextNode(cell);
-            if (range.startContainer === lastTextNode && range.startOffset === lastTextNode.length) return true;
-        }
-        return false;
-    }
-
-    _getLastTextNode(el) {
-        let n = el.lastChild;
-        while (n && n.nodeType !== Node.TEXT_NODE) {
-            n = n.lastChild || n.previousSibling;
-        }
-        return n;
-    }
-
-    _navigateVertical(cell, direction, event) {
-        const currentRow = cell.closest('tr');
-        if (!currentRow) return;
-
-        const targetRow = direction === -1
-            ? currentRow.previousElementSibling
-            : currentRow.nextElementSibling;
-
-        if (targetRow && targetRow.closest('tbody')) {
-            const colIdx = parseInt(cell.dataset.col);
-            const cells = targetRow.querySelectorAll('td');
-            const targetCell = cells[colIdx];
-
-            if (targetCell && targetCell.getAttribute('contenteditable') === 'true') {
-                event.preventDefault();
-                targetCell.focus();
-            }
-            // Reset arrow down counter when navigating successfully
-            this._pendingArrowDowns = 0;
-        } else if (direction === 1) {
-            // We're on the last row trying to go down
-            const now = Date.now();
-            const timeSinceLastArrow = now - this._lastArrowDownTime;
-
-            // Reset counter if more than 500ms since last arrow down
-            if (timeSinceLastArrow > 500) {
-                this._pendingArrowDowns = 0;
-            }
-
-            this._pendingArrowDowns++;
-            this._lastArrowDownTime = now;
-
-            // On second arrow down within 500ms, create new row
-            if (this._pendingArrowDowns >= 2) {
-                event.preventDefault();
-                this._pendingArrowDowns = 0;
-                this.createNewRow(true);
-            }
-        }
-    }
-
-    _navigateHorizontal(cell, direction, event) {
-        const currentRow = cell.closest('tr');
-        const editableCells = Array.from(currentRow.querySelectorAll('td[contenteditable="true"]'));
-
-        if (editableCells.length === 0) return;
-
-        const currentIndex = editableCells.indexOf(cell);
-        let nextIndex;
-
-        if (direction === 1) {
-            nextIndex = currentIndex + 1;
-            if (nextIndex >= editableCells.length) {
-                const nextRow = currentRow.nextElementSibling;
-                if (nextRow && nextRow.closest('tbody')) {
-                    const nextCell = nextRow.querySelector('td[contenteditable="true"]');
-                    if (nextCell) {
-                        event.preventDefault();
-                        nextCell.focus();
-                        return;
-                    }
-                }
-                nextIndex = 0;
-            }
+        if (this._data.length === 0) {
+            this._showEmptyState();
         } else {
-            nextIndex = currentIndex - 1;
-            if (nextIndex < 0) {
-                const prevRow = currentRow.previousElementSibling;
-                if (prevRow && prevRow.closest('tbody')) {
-                    const prevCells = prevRow.querySelectorAll('td[contenteditable="true"]');
-                    if (prevCells.length) {
-                        event.preventDefault();
-                        prevCells[prevCells.length - 1].focus();
-                        return;
-                    }
-                }
-                nextIndex = editableCells.length - 1;
+            // Focus en fila anterior o primera (sin abrir editor)
+            const newFocusRow = Math.max(0, rowIdx - 1);
+            const firstEditableCol = this._columns.findIndex(c => c.editable);
+            if (firstEditableCol !== -1) {
+                requestAnimationFrame(() => this.focusCell(newFocusRow, firstEditableCol, false));
             }
-        }
-
-        const targetCell = editableCells[nextIndex];
-        if (targetCell) {
-            event.preventDefault();
-            targetCell.focus();
         }
     }
 
-    // --- Styles ---
+    // === Editor Overlay ===
 
-    _getStyles() {
-        return `
-            /* ========== BNX DATA GRID - Light DOM ========== */
+    _showEditor(cell, rowIdx, colIdx) {
+        // Si ya hay editor en esta celda, no hacer nada
+        if (this._editingCell === cell) return;
+
+        // Commit editor anterior si existe
+        this._commitEditor();
+
+        const col = this._columns[colIdx];
+        const row = this._data[rowIdx];
+        const rawValue = row[col.key];
+
+        // Usar textarea para texto, input para otros tipos
+        const useTextarea = col.type === 'text' || col.type === undefined || col.multiline;
+        const editor = document.createElement(useTextarea ? 'textarea' : 'input');
+        editor.className = 'bnx-dg-editor-input';
+
+        if (!useTextarea) {
+            editor.type = this._getInputType(col);
+            editor.inputMode = this._getInputMode(col);
+        } else {
+            editor.rows = 1;
+        }
+
+        // Valor raw (sin formato)
+        editor.value = rawValue ?? '';
+
+        // Validación HTML5 desde config de columna
+        if (col.validation) {
+            if (col.validation.required) editor.required = true;
+            if (col.validation.min != null) editor.min = col.validation.min;
+            if (col.validation.max != null) editor.max = col.validation.max;
+            if (col.validation.minLength != null) editor.minLength = col.validation.minLength;
+            if (col.validation.maxLength != null) editor.maxLength = col.validation.maxLength;
+            if (col.validation.pattern) editor.pattern = col.validation.pattern;
+            if (col.validation.step) editor.step = col.validation.step;
+        }
+
+        // Posicionar sobre la celda
+        const rect = cell.getBoundingClientRect();
+        const containerRect = this.getBoundingClientRect();
+
+        editor.style.cssText = `
+            position: absolute;
+            left: ${rect.left - containerRect.left}px;
+            top: ${rect.top - containerRect.top}px;
+            width: ${rect.width}px;
+            min-height: ${rect.height}px;
+            text-align: ${col.align};
+            z-index: 100;
+            resize: none;
+            overflow: hidden;
+        `;
+
+        // Marcar celda como editando
+        cell.classList.add('bnx-dg-cell-editing');
+
+        // Agregar al container
+        const container = this.querySelector('.bnx-dg-spreadsheet-container');
+        if (container) {
+            container.style.position = 'relative';
+            container.appendChild(editor);
+        }
+
+        this._activeEditor = editor;
+        this._editingCell = cell;
+        this._originalValue = rawValue;
+
+        // Event listeners del editor
+        editor.addEventListener('blur', () => this._onEditorBlur());
+        editor.addEventListener('input', () => this._onEditorInput());
+        editor.addEventListener('keydown', (e) => this._onEditorKeydown(e));
+        editor.addEventListener('paste', (e) => this._onEditorPaste(e));
+
+        // Focus y seleccionar
+        editor.focus();
+        editor.select();
+    }
+
+    _getInputType(col) {
+        switch (col.type) {
+            case 'number':
+            case 'currency':
+                return 'text'; // Usamos text para permitir formateo flexible
+            case 'date':
+                return 'date';
+            case 'email':
+                return 'email';
+            case 'url':
+                return 'url';
+            case 'tel':
+                return 'tel';
+            default:
+                return 'text';
+        }
+    }
+
+    _getInputMode(col) {
+        switch (col.type) {
+            case 'number':
+            case 'currency':
+                return 'decimal';
+            case 'tel':
+                return 'tel';
+            case 'email':
+                return 'email';
+            case 'url':
+                return 'url';
+            default:
+                return 'text';
+        }
+    }
+
+    _onEditorInput() {
+        if (!this._activeEditor || !this._editingCell) return;
+
+        // Auto-resize para textarea
+        if (this._activeEditor.tagName === 'TEXTAREA') {
+            this._activeEditor.style.height = 'auto';
+            this._activeEditor.style.height = this._activeEditor.scrollHeight + 'px';
+        }
+
+        const rowIdx = parseInt(this._editingCell.dataset.row);
+        const colIdx = parseInt(this._editingCell.dataset.col);
+        const col = this._columns[colIdx];
+
+        let value = this._activeEditor.value;
+
+        // Parsear números
+        if (col.type === 'number' || col.type === 'currency') {
+            value = this._parseNumericValue(value);
+        }
+
+        // Actualizar data interna
+        if (this._data[rowIdx]) {
+            this._data[rowIdx][col.key] = value;
+        }
+
+        // Dispatch cell-change
+        this.dispatchEvent(new CustomEvent('cell-change', {
+            bubbles: true,
+            detail: {
+                rowIndex: rowIdx,
+                rowKey: this._data[rowIdx]?.[this.rowKey],
+                column: col.key,
+                value,
+                row: this._data[rowIdx]
+            }
+        }));
+    }
+
+    _onEditorBlur() {
+        // Pequeño delay para permitir click en otra celda
+        setTimeout(() => {
+            if (this._activeEditor && !this._activeEditor.matches(':focus')) {
+                this._commitEditor();
+            }
+        }, 10);
+    }
+
+    _getCursorPosition() {
+        if (!this._activeEditor) return { atStart: false, atEnd: false };
+        const input = this._activeEditor;
+        return {
+            atStart: input.selectionStart === 0 && input.selectionEnd === 0,
+            atEnd: input.selectionStart === input.value.length && input.selectionEnd === input.value.length
+        };
+    }
+
+    _onEditorKeydown(e) {
+        if (!this._editingCell) return;
+
+        const rowIdx = parseInt(this._editingCell.dataset.row);
+        const colIdx = parseInt(this._editingCell.dataset.col);
+        const cursor = this._getCursorPosition();
+
+        // Shift+Delete: eliminar fila (doble press)
+        if (e.key === 'Delete' && e.shiftKey && !e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            this._handleDoublePress(this._lastShiftDelete, () => {
+                this._commitEditor();
+                this._deleteRowAtIndex(rowIdx);
+            });
+            return;
+        }
+
+        switch (e.key) {
+            case 'Tab':
+                e.preventDefault();
+                e.stopPropagation();
+                this._commitEditor();
+                this._navigateHorizontal(rowIdx, colIdx, e.shiftKey ? -1 : 1);
+                break;
+
+            case 'Enter':
+                if (e.shiftKey) {
+                    // Shift+Enter: nueva línea (solo funciona en textarea)
+                    if (this._activeEditor.tagName === 'TEXTAREA') {
+                        return;
+                    }
+                } else {
+                    // Enter: guardar y quedarse en la celda actual
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Guardar índices ANTES de commit (cell-blur puede re-renderizar)
+                    const savedRow = rowIdx;
+                    const savedCol = colIdx;
+                    this._commitEditor();
+                    // Re-encontrar celda fresca después del posible re-render
+                    requestAnimationFrame(() => {
+                        this.focusCell(savedRow, savedCol, false);
+                    });
+                }
+                break;
+
+            case 'Escape':
+                e.preventDefault();
+                e.stopPropagation();
+                // Guardar índices antes de cancelar
+                const escRow = rowIdx;
+                const escCol = colIdx;
+                this._cancelEditor();
+                requestAnimationFrame(() => {
+                    this.focusCell(escRow, escCol, false);
+                });
+                break;
+
+            case 'ArrowUp':
+                if (cursor.atStart) {
+                    // Cursor ya al inicio: navegar arriba
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._commitEditor();
+                    this._navigateVertical(rowIdx, colIdx, -1);
+                } else {
+                    // Mover cursor al inicio (comportamiento default se cancela)
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._activeEditor.setSelectionRange(0, 0);
+                }
+                break;
+
+            case 'ArrowDown':
+                if (cursor.atEnd) {
+                    // Cursor ya al final: navegar abajo o crear fila
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isLastRow = rowIdx === this._data.length - 1;
+                    if (isLastRow) {
+                        this._handleDoublePress(this._lastArrowDown, () => {
+                            this._commitEditor();
+                            this.createNewRow(true);
+                        });
+                    } else {
+                        this._commitEditor();
+                        this._navigateVertical(rowIdx, colIdx, 1);
+                    }
+                } else {
+                    // Mover cursor al final
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const len = this._activeEditor.value.length;
+                    this._activeEditor.setSelectionRange(len, len);
+                }
+                break;
+
+            case 'ArrowLeft':
+                if (cursor.atStart) {
+                    // Cursor al inicio: navegar a celda anterior (loop en misma fila)
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._commitEditor();
+                    this._navigateHorizontal(rowIdx, colIdx, -1, true);
+                }
+                // Si no está al inicio, permitir movimiento normal del cursor
+                break;
+
+            case 'ArrowRight':
+                if (cursor.atEnd) {
+                    // Cursor al final: navegar a celda siguiente (loop en misma fila)
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._commitEditor();
+                    this._navigateHorizontal(rowIdx, colIdx, 1, true);
+                }
+                // Si no está al final, permitir movimiento normal del cursor
+                break;
+        }
+    }
+
+    _onEditorPaste(e) {
+        // Forzar text/plain
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        const clean = text.trim().replace(/[\r\n]+/g, ' ');
+        document.execCommand('insertText', false, clean);
+    }
+
+    _commitEditor() {
+        if (!this._activeEditor || !this._editingCell) return;
+
+        const rowIdx = parseInt(this._editingCell.dataset.row);
+        const colIdx = parseInt(this._editingCell.dataset.col);
+        const col = this._columns[colIdx];
+        const currentValue = this._activeEditor.value;
+
+        // Validación HTML5
+        if (!this._activeEditor.checkValidity()) {
+            this._activeEditor.reportValidity();
+            this._activeEditor.focus();
+            return;
+        }
+
+        // Parsear valor final
+        let finalValue = currentValue;
+        if (col.type === 'number' || col.type === 'currency') {
+            finalValue = this._parseNumericValue(currentValue);
+        }
+
+        // Actualizar celda con valor formateado
+        this._editingCell.textContent = this._formatValue(finalValue, col);
+
+        // Actualizar data
+        if (this._data[rowIdx]) {
+            this._data[rowIdx][col.key] = finalValue;
+        }
+
+        // Detectar cambio real
+        const hasChanged = this._originalValue !== finalValue;
+
+        // Limpiar estado
+        this._editingCell.classList.remove('bnx-dg-cell-editing');
+        this._activeEditor.remove();
+        this._activeEditor = null;
+        this._editingCell = null;
+
+        // Dispatch cell-blur solo si hubo cambio
+        if (hasChanged) {
+            this.dispatchEvent(new CustomEvent('cell-blur', {
+                bubbles: true,
+                detail: {
+                    rowIndex: rowIdx,
+                    rowKey: this._data[rowIdx]?.[this.rowKey],
+                    column: col.key,
+                    value: finalValue,
+                    row: this._data[rowIdx]
+                }
+            }));
+        }
+    }
+
+    _cancelEditor() {
+        if (!this._activeEditor || !this._editingCell) return null;
+
+        const cell = this._editingCell;
+
+        // Restaurar valor original
+        const col = this._columns[parseInt(cell.dataset.col)];
+        cell.textContent = this._formatValue(this._originalValue, col);
+
+        cell.classList.remove('bnx-dg-cell-editing');
+        this._activeEditor.remove();
+        this._activeEditor = null;
+        this._editingCell = null;
+
+        return cell;
+    }
+
+    _removeEditor() {
+        if (this._activeEditor) {
+            this._commitEditor();
+        }
+    }
+
+    _parseNumericValue(str) {
+        if (typeof str === 'number') return str;
+        if (!str || str === '') return 0;
+
+        str = str.replace(/[$\s]/g, '').trim();
+
+        const hasComma = str.includes(',');
+        const hasDot = str.includes('.');
+
+        if (hasComma && hasDot) {
+            if (/,\d{1,2}$/.test(str)) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            } else {
+                str = str.replace(/,/g, '');
+            }
+        } else if (hasComma) {
+            str = str.replace(',', '.');
+        }
+
+        const num = parseFloat(str);
+        return isNaN(num) ? 0 : num;
+    }
+
+    // === Styles ===
+
+    _injectStyles() {
+        if (BnxDataGrid._stylesInjected) return;
+
+        const style = document.createElement('style');
+        style.id = 'bnx-data-grid-styles';
+        style.textContent = `
             bnx-data-grid {
                 display: block;
                 --grid-border-color: var(--color-border-subtle, #e5e7eb);
                 --grid-header-bg: var(--color-gray-50, #f9fafb);
                 --grid-row-hover: var(--color-gray-50, #f9fafb);
-                --grid-cell-editable-bg: hsl(48, 96%, 95%);
+                --grid-cell-editable-bg: hsl(48, 96%, 98%);
                 --grid-cell-focus-ring: var(--color-brand-primary, #2563eb);
             }
 
-            .bnx-data-grid {
-                width: 100%;
-            }
+            .bnx-data-grid { width: 100%; }
 
-            /* ========== SPREADSHEET MODE ========== */
             .bnx-dg-spreadsheet-container {
                 overflow-x: auto;
                 border: 1px solid var(--grid-border-color);
                 border-radius: var(--radius-lg, 0.5rem);
                 background: var(--color-white, #fff);
+                position: relative;
             }
 
             .bnx-dg-spreadsheet {
                 width: 100%;
                 border-collapse: collapse;
                 font-size: var(--text-size-sm, 0.875rem);
-                min-width: 600px;
             }
 
             .bnx-dg-spreadsheet thead {
@@ -764,11 +1151,11 @@ class BnxDataGrid extends HTMLElement {
 
             .bnx-dg-spreadsheet th {
                 background: var(--grid-header-bg);
-                padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
-                font-weight: var(--font-weight-semibold, 600);
+                padding: 0.75rem 1rem;
+                font-weight: 600;
                 color: var(--color-text-secondary, #6b7280);
                 text-transform: uppercase;
-                font-size: var(--text-size-xs, 0.75rem);
+                font-size: 0.75rem;
                 letter-spacing: 0.05em;
                 border-bottom: 1px solid var(--grid-border-color);
                 white-space: nowrap;
@@ -780,10 +1167,10 @@ class BnxDataGrid extends HTMLElement {
             }
 
             .bnx-dg-spreadsheet td {
-                padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
+                padding: 0.75rem 1rem;
                 border-bottom: 1px solid var(--grid-border-color);
                 color: var(--color-text-primary, #111827);
-                transition: background-color 0.15s;
+                position: relative;
             }
 
             .bnx-dg-spreadsheet tbody tr:hover td {
@@ -791,7 +1178,7 @@ class BnxDataGrid extends HTMLElement {
             }
 
             .bnx-dg-spreadsheet td.bnx-dg-cell-editable {
-                background: hsl(48, 96%, 98%);
+                background: var(--grid-cell-editable-bg);
                 cursor: text;
             }
 
@@ -799,12 +1186,16 @@ class BnxDataGrid extends HTMLElement {
                 background: hsl(48, 96%, 95%);
             }
 
-            .bnx-dg-spreadsheet td.bnx-dg-cell-editable:focus {
+            .bnx-dg-spreadsheet td.bnx-dg-cell-editable:focus,
+            .bnx-dg-spreadsheet td.bnx-dg-cell-selected {
                 outline: 2px solid var(--grid-cell-focus-ring);
                 outline-offset: -2px;
                 background: hsl(217, 91%, 97%);
-                position: relative;
-                z-index: 20;
+            }
+
+            .bnx-dg-spreadsheet td.bnx-dg-cell-editing {
+                background: transparent !important;
+                outline: none !important;
             }
 
             .bnx-dg-spreadsheet td.bnx-dg-cell-number,
@@ -813,185 +1204,106 @@ class BnxDataGrid extends HTMLElement {
                 font-variant-numeric: tabular-nums;
             }
 
-            .bnx-dg-empty-row {
+            .bnx-dg-empty-row td {
                 text-align: center;
                 color: var(--color-text-tertiary, #9ca3af);
                 font-style: italic;
-                padding: var(--spacing-8, 2rem) !important;
+                padding: 2rem !important;
             }
 
-            /* ========== CARDS MODE ========== */
+            /* Editor Overlay */
+            .bnx-dg-editor-input {
+                box-sizing: border-box;
+                border: 2px solid var(--grid-cell-focus-ring);
+                border-radius: 0;
+                padding: 0.6rem 0.9rem;
+                font-family: inherit;
+                font-size: inherit;
+                background: white;
+                outline: none;
+            }
+
+            .bnx-dg-editor-input:invalid {
+                border-color: hsl(0, 84%, 60%);
+                background: hsl(0, 84%, 98%);
+            }
+
+            .bnx-dg-editor-input:focus {
+                box-shadow: 0 0 0 3px hsla(217, 91%, 60%, 0.2);
+            }
+
+            /* Cards Mode */
             .bnx-dg-cards-grid {
                 display: grid;
                 grid-template-columns: repeat(1, 1fr);
-                gap: var(--spacing-4, 1rem);
+                gap: 1rem;
             }
 
-            @media (min-width: 640px) {
-                .bnx-dg-cards-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
-
-            @media (min-width: 1024px) {
-                .bnx-dg-cards-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-            }
-
-            @media (min-width: 1280px) {
-                .bnx-dg-cards-grid {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-            }
+            @media (min-width: 640px) { .bnx-dg-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+            @media (min-width: 1024px) { .bnx-dg-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+            @media (min-width: 1280px) { .bnx-dg-cards-grid { grid-template-columns: repeat(4, 1fr); } }
 
             .bnx-dg-card {
-                background: var(--color-white, #fff);
+                background: white;
                 border: 1px solid var(--grid-border-color);
-                border-radius: var(--radius-lg, 0.5rem);
-                padding: var(--spacing-5, 1.25rem);
+                border-radius: 0.5rem;
+                padding: 1.25rem;
                 cursor: pointer;
-                transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+                transition: transform 0.2s, box-shadow 0.2s;
             }
 
             .bnx-dg-card:hover {
                 transform: translateY(-2px);
-                box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
-                border-color: var(--color-brand-primary, #2563eb);
-            }
-
-            .bnx-dg-card-header {
-                margin-bottom: var(--spacing-3, 0.75rem);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             }
 
             .bnx-dg-card-title {
-                font-size: var(--text-size-sm, 0.875rem);
-                font-weight: var(--font-weight-bold, 700);
-                color: var(--color-text-primary, #111827);
-                margin: 0 0 var(--spacing-3, 0.75rem) 0;
-                line-height: 1.4;
-            }
-
-            .bnx-dg-card-body {
-                display: flex;
-                flex-direction: column;
-                gap: var(--spacing-2, 0.5rem);
+                font-weight: 700;
+                margin: 0 0 0.75rem 0;
             }
 
             .bnx-dg-card-field {
                 display: flex;
                 justify-content: space-between;
-                align-items: center;
-                font-size: var(--text-size-sm, 0.875rem);
+                font-size: 0.875rem;
+                margin-bottom: 0.5rem;
             }
 
-            .bnx-dg-card-field-label {
-                color: var(--color-text-tertiary, #9ca3af);
-            }
+            .bnx-dg-card-field-label { color: #9ca3af; }
+            .bnx-dg-card-field-value { color: #6b7280; font-family: monospace; }
 
-            .bnx-dg-card-field-value {
-                color: var(--color-text-secondary, #6b7280);
-                font-family: ui-monospace, monospace;
-            }
-
-            .bnx-dg-card-notes {
-                margin: var(--spacing-3, 0.75rem) 0 0 0;
-                padding-top: var(--spacing-3, 0.75rem);
-                border-top: 1px solid var(--grid-border-color);
-                font-size: var(--text-size-xs, 0.75rem);
-                color: var(--color-text-tertiary, #9ca3af);
-                font-style: italic;
-            }
-
-            /* ========== CATEGORY BADGES ========== */
-            .bnx-dg-category-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: var(--spacing-1, 0.25rem);
-                padding: var(--spacing-1, 0.25rem) var(--spacing-2, 0.5rem);
-                font-size: var(--text-size-xs, 0.75rem);
-                font-weight: var(--font-weight-semibold, 600);
-                border-radius: var(--radius-full, 9999px);
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-            }
-
-            .bnx-dg-category-badge-cogs {
-                background: hsl(217, 91%, 95%);
-                color: hsl(217, 91%, 45%);
-            }
-
-            .bnx-dg-category-badge-capex {
-                background: hsl(160, 84%, 92%);
-                color: hsl(160, 84%, 30%);
-            }
-
-            .bnx-dg-category-badge-stock {
-                background: hsl(270, 76%, 94%);
-                color: hsl(270, 71%, 45%);
-            }
-
-            /* ========== BADGES ========== */
+            /* Badges */
             .bnx-dg-badge {
                 display: inline-block;
-                padding: var(--spacing-1, 0.25rem) var(--spacing-2, 0.5rem);
-                font-size: var(--text-size-xs, 0.75rem);
-                font-weight: var(--font-weight-semibold, 600);
-                border-radius: var(--radius-full, 9999px);
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+                font-weight: 600;
+                border-radius: 9999px;
                 text-transform: uppercase;
-                letter-spacing: 0.05em;
             }
 
-            .bnx-dg-badge-default {
-                background: var(--color-gray-100, #f3f4f6);
-                color: var(--color-gray-700, #374151);
-            }
+            .bnx-dg-badge-default { background: #f3f4f6; color: #374151; }
+            .bnx-dg-badge-blue { background: hsl(217, 91%, 95%); color: hsl(217, 91%, 45%); }
+            .bnx-dg-badge-green { background: hsl(142, 76%, 94%); color: hsl(142, 71%, 29%); }
+            .bnx-dg-badge-amber { background: hsl(45, 93%, 94%); color: hsl(45, 93%, 35%); }
+            .bnx-dg-badge-red { background: hsl(0, 84%, 95%); color: hsl(0, 84%, 40%); }
 
-            .bnx-dg-badge-blue {
-                background: hsl(217, 91%, 95%);
-                color: hsl(217, 91%, 45%);
-            }
-
-            .bnx-dg-badge-green {
-                background: hsl(142, 76%, 94%);
-                color: hsl(142, 71%, 29%);
-            }
-
-            .bnx-dg-badge-amber {
-                background: hsl(45, 93%, 94%);
-                color: hsl(45, 93%, 35%);
-            }
-
-            .bnx-dg-badge-red {
-                background: hsl(0, 84%, 95%);
-                color: hsl(0, 84%, 40%);
-            }
-
-            .bnx-dg-badge-purple {
-                background: hsl(270, 76%, 94%);
-                color: hsl(270, 71%, 45%);
-            }
-
-            .bnx-dg-badge-emerald {
-                background: hsl(160, 84%, 92%);
-                color: hsl(160, 84%, 30%);
-            }
-
-            /* ========== EMPTY STATE ========== */
+            /* Empty State */
             .bnx-dg-empty-state {
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: var(--spacing-8, 2rem);
+                padding: 2rem;
                 text-align: center;
-                color: var(--color-text-tertiary, #9ca3af);
-                background: var(--color-white, #fff);
+                color: #9ca3af;
+                background: white;
                 border: 2px dashed var(--grid-border-color);
-                border-radius: var(--radius-lg, 0.5rem);
+                border-radius: 0.5rem;
                 min-height: 200px;
             }
         `;
+        document.head.appendChild(style);
+        BnxDataGrid._stylesInjected = true;
     }
 }
 
