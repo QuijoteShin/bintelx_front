@@ -159,6 +159,8 @@
     box-sizing: border-box;
 }
 
+html, body { height: 100%; }
+
 body {
     font-family: emoji, var(--font-family-sans);
     color: var(--color-text-primary);
@@ -168,6 +170,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
 }
+
+/* App shell: cadena de alturas para que h-full funcione en módulos */
+#slot-app { display: flex; flex-direction: column; height: 100%; }
+#pre-app  { flex-shrink: 0; }
+#app      { flex: 1; min-height: 0; overflow: auto; }
+#post-app { flex-shrink: 0; }
 
 /* --------------------------------------------------------------------------
    3. NATIVE & SEMANTIC ELEMENT STYLING
