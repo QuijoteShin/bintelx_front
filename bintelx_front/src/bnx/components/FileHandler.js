@@ -73,6 +73,60 @@ function dispatchUploadEvent(root, name, detail) {
     root.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
 }
 
+function mimeToExtension(type) {
+    const map = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'application/pdf': 'pdf'
+    };
+    return map[type] || 'bin';
+}
+
+function extractFilesFromClipboard(event) {
+    const files = [];
+    const clipboard = event?.clipboardData;
+    if (!clipboard) return files;
+
+    if (clipboard.files && clipboard.files.length) {
+        files.push(...Array.from(clipboard.files));
+        return files;
+    }
+
+    if (clipboard.items && clipboard.items.length) {
+        Array.from(clipboard.items).forEach((item) => {
+            if (item.kind === 'file') {
+                const file = item.getAsFile();
+                if (file) files.push(file);
+            }
+        });
+    }
+
+    return files;
+}
+
+async function readClipboardFiles() {
+    // Requiere permiso clipboard-read y ejecutarse en un gesto de usuario.
+    const items = await navigator.clipboard.read();
+    const files = [];
+    let idx = 1;
+
+    for (const item of items) {
+        const type = item.types?.[0];
+        if (!type) continue;
+        const blob = await item.getType(type);
+        if (!blob) continue;
+        const ext = mimeToExtension(blob.type || type);
+        const name = `clipboard-${Date.now()}-${idx}.${ext}`;
+        files.push(new File([blob], name, { type: blob.type || type }));
+        idx += 1;
+    }
+
+    return files;
+}
+
 export function initFileHandler(root) {
     if (!root || INSTANCES.has(root)) return;
 
@@ -89,11 +143,13 @@ export function initFileHandler(root) {
     const totalSizeEl = root.querySelector('[data-fh-total-size]') || root.querySelector('#fh-total-size');
     const resultsCard = root.querySelector('[data-fh-results]') || root.querySelector('#fh-results-card');
     const resultsContent = root.querySelector('[data-fh-results-content]') || root.querySelector('#fh-results-content');
+    const pasteBtn = root.querySelector('[data-fh-paste]');
 
     if (!dropArea || !filesInput || !actionBar || !fileList || !countEl || !totalSizeEl || !uploadBtn || !clearBtn) return;
 
     const state = { fileQueue: new Map() };
     INSTANCES.set(root, state);
+    if (!dropArea.hasAttribute('tabindex')) dropArea.setAttribute('tabindex', '0');
 
     function updateActionBar() {
         const count = state.fileQueue.size;
@@ -464,12 +520,29 @@ export function initFileHandler(root) {
         if (files?.length) addFilesToQueue(Array.from(files));
     });
 
+    dropArea.addEventListener('click', () => dropArea.focus());
+    dropArea.addEventListener('paste', (e) => {
+        const files = extractFilesFromClipboard(e);
+        if (files.length) {
+            e.preventDefault();
+            addFilesToQueue(files);
+        }
+    });
+
     browseFiles?.addEventListener('click', () => filesInput?.click());
     browseFolder?.addEventListener('click', () => directoryInput?.click());
     filesInput.addEventListener('change', (e) => addFilesToQueue(Array.from(e.target.files)));
     directoryInput.addEventListener('change', (e) => addFilesToQueue(Array.from(e.target.files)));
     uploadBtn.addEventListener('click', uploadAll);
     clearBtn.addEventListener('click', clearQueue);
+    pasteBtn?.addEventListener('click', async () => {
+        try {
+            const files = await readClipboardFiles();
+            if (files.length) addFilesToQueue(files);
+        } catch (err) {
+            devlog('Clipboard read failed:', err);
+        }
+    });
 }
 
 export function initFileHandlers(container) {
