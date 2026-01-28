@@ -1,5 +1,19 @@
 // src/bnx/components/data-grid/DataGrid.js
 // DataGrid v2 - Event Delegation + Editor Overlay + HTML5 Validation
+//
+// REVIEW NOTES (2026-01-28)
+// - Medio – Riesgo de inyección HTML si un col.format() devuelve contenido con datos de usuario.
+//   - _formatValue() devuelve HTML sin escape cuando hay format o type=html/action, y _renderRow() lo inserta directo
+//     en el DOM.
+//   - Si algún format construye HTML con texto no sanitizado (ej: nombre del item editable), hay vector XSS.
+//   - Ref: src/bnx/components/data-grid/DataGrid.js:250 y src/bnx/components/data-grid/DataGrid.js:372.
+// - Medio – setData() mientras hay edición activa no re-renderiza (solo actualiza _data).
+//   - El DOM puede quedar desincronizado si el state cambia (rows nuevas/eliminadas) durante edición.
+//   - En grids con updates frecuentes (workunit con 3k filas), puede generar eventos sobre filas incorrectas.
+//   - Ref: src/bnx/components/data-grid/DataGrid.js:39.
+// - Bajo – paste usa document.execCommand('insertText') (deprecated).
+//   - Si falla en el browser, el paste queda bloqueado porque se hace preventDefault().
+//   - Ref: src/bnx/components/data-grid/DataGrid.js:1008.
 
 class BnxDataGrid extends HTMLElement {
     static _stylesInjected = false;
