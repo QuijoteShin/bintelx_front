@@ -24,6 +24,8 @@ class BnxDataGrid extends HTMLElement {
         this._columns = [];
         this._newRowTemplate = null;
         this._cardTemplate = null;
+        this._detailsTemplate = null;
+        this._expandedRows = new Set();
 
         // Editor overlay state
         this._activeEditor = null;
@@ -87,11 +89,13 @@ class BnxDataGrid extends HTMLElement {
         // Si estamos editando y no se fuerza refresh, solo actualizar datos internos
         if (wasEditing && options.preserveFocus !== false) {
             this._data = Array.isArray(data) ? [...data] : [];
+            this._cleanupExpandedRows();
             return;
         }
 
         this._removeEditor();
         this._data = Array.isArray(data) ? [...data] : [];
+        this._cleanupExpandedRows();
         this.render();
         this._attachDelegatedListeners();
     }
@@ -109,6 +113,40 @@ class BnxDataGrid extends HTMLElement {
         if (this.mode === 'cards') {
             this.render();
         }
+    }
+
+    setDetailsTemplate(templateFn) {
+        if (typeof templateFn === 'function') {
+            this._detailsTemplate = templateFn;
+            return;
+        }
+
+        if (templateFn instanceof HTMLElement) {
+            this._detailsTemplate = () => templateFn.cloneNode(true);
+            return;
+        }
+
+        if (typeof templateFn === 'string') {
+            this._detailsTemplate = () => templateFn;
+            return;
+        }
+
+        this._detailsTemplate = null;
+    }
+
+    toggleRowDetails(rowKey) {
+        if (!this._detailsTemplate) return false;
+
+        const key = String(rowKey);
+        if (this._expandedRows.has(key)) {
+            this._expandedRows.delete(key);
+            this._removeDetailsRow(key);
+            return false;
+        }
+
+        this._expandedRows.add(key);
+        this._insertDetailsRow(key);
+        return true;
     }
 
     addRow(row) {
@@ -145,6 +183,10 @@ class BnxDataGrid extends HTMLElement {
                 }
             });
         }
+
+        if (this._detailsTemplate && this._expandedRows.has(String(key))) {
+            this._refreshDetailsRow(String(key), idx);
+        }
     }
 
     deleteRow(key) {
@@ -152,6 +194,8 @@ class BnxDataGrid extends HTMLElement {
         if (idx === -1) return;
 
         this._data.splice(idx, 1);
+        this._expandedRows.delete(String(key));
+        this._removeDetailsRow(String(key));
 
         // Render incremental: remover solo la fila
         const tr = this.querySelector(`tr[data-row-key="${key}"]`);
@@ -274,10 +318,19 @@ class BnxDataGrid extends HTMLElement {
         if (!this._data.length) {
             return `<tr class="bnx-dg-empty-row"><td colspan="${this._columns.length}">Sin datos</td></tr>`;
         }
-        return this._data.map((row, idx) => this._renderRow(row, idx)).join('');
+        return this._data.map((row, idx) => {
+            const rowKey = this._getRowKey(row, idx);
+            const key = String(rowKey);
+            const mainRow = this._renderRow(row, idx);
+            if (this._detailsTemplate && this._expandedRows.has(key)) {
+                return mainRow + this._renderDetailsRow(row, idx, key);
+            }
+            return mainRow;
+        }).join('');
     }
 
     _renderRow(row, rowIdx) {
+        const rowKey = this._getRowKey(row, rowIdx);
         const cells = this._columns.map((col, colIdx) => {
             const value = row[col.key] ?? '';
             const formatted = this._formatValue(value, col);
@@ -294,13 +347,13 @@ class BnxDataGrid extends HTMLElement {
                        tabindex="${col.editable ? 0 : -1}">${formatted}</td>`;
         }).join('');
 
-        return `<tr data-row-idx="${rowIdx}" data-row-key="${row[this.rowKey] || rowIdx}">${cells}</tr>`;
+        return `<tr data-row-idx="${rowIdx}" data-row-key="${rowKey}">${cells}</tr>`;
     }
 
     _createRowElement(row, rowIdx) {
         const tr = document.createElement('tr');
         tr.dataset.rowIdx = rowIdx;
-        tr.dataset.rowKey = row[this.rowKey] || rowIdx;
+        tr.dataset.rowKey = this._getRowKey(row, rowIdx);
 
         this._columns.forEach((col, colIdx) => {
             const td = document.createElement('td');
@@ -334,7 +387,7 @@ class BnxDataGrid extends HTMLElement {
     }
 
     _reindexRows() {
-        this.querySelectorAll('tbody tr').forEach((tr, idx) => {
+        this.querySelectorAll('tbody tr[data-row-key]').forEach((tr, idx) => {
             tr.dataset.rowIdx = idx;
             tr.querySelectorAll('td').forEach(td => {
                 td.dataset.row = idx;
@@ -384,6 +437,115 @@ class BnxDataGrid extends HTMLElement {
             <div class="bnx-dg-card-header"><h4 class="bnx-dg-card-title">${title}</h4></div>
             <div class="bnx-dg-card-body">${fields}</div>
         `;
+    }
+
+    _getRowKey(row, rowIdx) {
+        return row?.[this.rowKey] || rowIdx;
+    }
+
+    _renderDetailsRow(row, rowIdx, key) {
+        const html = this._detailsToHtml(this._detailsTemplate?.(row, rowIdx));
+        return `<tr class="bnx-dg-details-row" data-details-for="${key}">
+                    <td colspan="${this._columns.length}">
+                        <div class="bnx-dg-details-content">${html}</div>
+                    </td>
+                </tr>`;
+    }
+
+    _detailsToHtml(content) {
+        if (content === null || content === undefined) return '';
+        if (typeof content === 'string') return content;
+        if (content instanceof HTMLElement) return content.outerHTML;
+        return String(content);
+    }
+
+    _cleanupExpandedRows() {
+        if (!this._expandedRows.size) return;
+        const existing = new Set();
+        this._data.forEach((row, idx) => {
+            existing.add(String(this._getRowKey(row, idx)));
+        });
+        this._expandedRows.forEach(key => {
+            if (!existing.has(key)) this._expandedRows.delete(key);
+        });
+    }
+
+    _findRowByKey(key) {
+        const target = String(key);
+        const rows = this.querySelectorAll('tbody tr[data-row-key]');
+        for (const tr of rows) {
+            if (String(tr.dataset.rowKey) === target) return tr;
+        }
+        return null;
+    }
+
+    _findDetailsRow(key) {
+        const target = String(key);
+        const rows = this.querySelectorAll('tbody tr.bnx-dg-details-row');
+        for (const tr of rows) {
+            if (String(tr.dataset.detailsFor) === target) return tr;
+        }
+        return null;
+    }
+
+    _insertDetailsRow(key) {
+        const rowTr = this._findRowByKey(key);
+        if (!rowTr || this._findDetailsRow(key)) return;
+
+        const rowIdx = parseInt(rowTr.dataset.rowIdx);
+        const dataIdx = Number.isNaN(rowIdx)
+            ? this._data.findIndex((r, i) => String(this._getRowKey(r, i)) === String(key))
+            : rowIdx;
+        const row = this._data[dataIdx];
+        if (!row) return;
+
+        const detailsTr = document.createElement('tr');
+        detailsTr.className = 'bnx-dg-details-row';
+        detailsTr.dataset.detailsFor = String(key);
+
+        const td = document.createElement('td');
+        td.colSpan = this._columns.length;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bnx-dg-details-content';
+
+        const content = this._detailsTemplate?.(row, dataIdx);
+        if (content instanceof HTMLElement) {
+            wrapper.appendChild(content);
+        } else {
+            wrapper.innerHTML = this._detailsToHtml(content);
+        }
+
+        td.appendChild(wrapper);
+        detailsTr.appendChild(td);
+        rowTr.insertAdjacentElement('afterend', detailsTr);
+    }
+
+    _removeDetailsRow(key) {
+        const detailsTr = this._findDetailsRow(key);
+        if (detailsTr) detailsTr.remove();
+    }
+
+    _refreshDetailsRow(key, rowIdx = null) {
+        const detailsTr = this._findDetailsRow(key);
+        if (!detailsTr || !this._detailsTemplate) return;
+
+        const idx = rowIdx != null
+            ? rowIdx
+            : this._data.findIndex((r, i) => String(this._getRowKey(r, i)) === String(key));
+        const row = this._data[idx];
+        if (!row) return;
+
+        const wrapper = detailsTr.querySelector('.bnx-dg-details-content');
+        if (!wrapper) return;
+
+        const content = this._detailsTemplate(row, idx);
+        if (content instanceof HTMLElement) {
+            wrapper.innerHTML = '';
+            wrapper.appendChild(content);
+        } else {
+            wrapper.innerHTML = this._detailsToHtml(content);
+        }
     }
 
     // === Formatting ===
@@ -476,9 +638,11 @@ class BnxDataGrid extends HTMLElement {
     _handleTableClick(e) {
         const cell = e.target.closest('td');
         if (!cell) return;
+        if (Number.isNaN(parseInt(cell.dataset.row)) || Number.isNaN(parseInt(cell.dataset.col))) return;
 
         const rowIdx = parseInt(cell.dataset.row);
         const colIdx = parseInt(cell.dataset.col);
+        if (Number.isNaN(rowIdx) || Number.isNaN(colIdx)) return;
         const col = this._columns[colIdx];
 
         // Dispatch cell-click para todos
@@ -513,6 +677,7 @@ class BnxDataGrid extends HTMLElement {
         if (!cell) return;
 
         const colIdx = parseInt(cell.dataset.col);
+        if (Number.isNaN(colIdx)) return;
         const col = this._columns[colIdx];
 
         if (col?.editable) {
@@ -539,6 +704,7 @@ class BnxDataGrid extends HTMLElement {
 
         const rowIdx = parseInt(cell.dataset.row);
         const colIdx = parseInt(cell.dataset.col);
+        if (Number.isNaN(rowIdx) || Number.isNaN(colIdx)) return;
 
         // Ctrl+Delete: eliminar fila (doble press)
         if (e.key === 'Delete' && e.ctrlKey) {
@@ -698,10 +864,12 @@ class BnxDataGrid extends HTMLElement {
         if (rowIdx < 0 || rowIdx >= this._data.length) return;
 
         const deletedRow = this._data[rowIdx];
-        const rowKey = deletedRow[this.rowKey];
+        const rowKey = this._getRowKey(deletedRow, rowIdx);
 
         this._removeEditor();
         this._data.splice(rowIdx, 1);
+        this._expandedRows.delete(String(rowKey));
+        this._removeDetailsRow(String(rowKey));
 
         this.dispatchEvent(new CustomEvent('row-deleted', {
             bubbles: true,
@@ -1210,6 +1378,15 @@ class BnxDataGrid extends HTMLElement {
             .bnx-dg-spreadsheet td.bnx-dg-cell-editing {
                 background: transparent !important;
                 outline: none !important;
+            }
+
+            .bnx-dg-details-row td {
+                padding: 0;
+                background: var(--grid-details-bg, #f8fafc);
+            }
+
+            .bnx-dg-details-content {
+                padding: 0.75rem 1rem;
             }
 
             .bnx-dg-spreadsheet td.bnx-dg-cell-number,
