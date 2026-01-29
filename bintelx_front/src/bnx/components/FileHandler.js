@@ -109,19 +109,28 @@ function extractFilesFromClipboard(event) {
 
 async function readClipboardFiles() {
     // Requiere permiso clipboard-read y ejecutarse en un gesto de usuario.
+    if (!navigator.clipboard?.read) return [];
     const items = await navigator.clipboard.read();
     const files = [];
     let idx = 1;
 
     for (const item of items) {
-        const type = item.types?.[0];
-        if (!type) continue;
-        const blob = await item.getType(type);
-        if (!blob) continue;
-        const ext = mimeToExtension(blob.type || type);
-        const name = `clipboard-${Date.now()}-${idx}.${ext}`;
-        files.push(new File([blob], name, { type: blob.type || type }));
-        idx += 1;
+        if (!item.types || !item.types.length) continue;
+        for (const type of item.types) {
+            if (!type || type.startsWith('text/')) continue;
+            const blob = await item.getType(type);
+            if (!blob) continue;
+            if (blob instanceof File) {
+                files.push(blob);
+                idx += 1;
+                break;
+            }
+            const ext = mimeToExtension(blob.type || type);
+            const name = `clipboard-${Date.now()}-${idx}.${ext}`;
+            files.push(new File([blob], name, { type: blob.type || type }));
+            idx += 1;
+            break;
+        }
     }
 
     return files;
@@ -149,7 +158,7 @@ export function initFileHandler(root) {
 
     const state = { fileQueue: new Map() };
     INSTANCES.set(root, state);
-    if (!dropArea.hasAttribute('tabindex')) dropArea.setAttribute('tabindex', '0');
+    if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '0');
 
     function updateActionBar() {
         const count = state.fileQueue.size;
@@ -520,8 +529,12 @@ export function initFileHandler(root) {
         if (files?.length) addFilesToQueue(Array.from(files));
     });
 
-    dropArea.addEventListener('click', () => dropArea.focus());
-    dropArea.addEventListener('paste', (e) => {
+    root.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+        root.focus();
+    });
+
+    root.addEventListener('paste', (e) => {
         const files = extractFilesFromClipboard(e);
         if (files.length) {
             e.preventDefault();
