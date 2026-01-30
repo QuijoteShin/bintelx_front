@@ -108,7 +108,6 @@ function extractFilesFromClipboard(event) {
 }
 
 async function readClipboardFiles() {
-    // Requiere permiso clipboard-read y ejecutarse en un gesto de usuario.
     if (!navigator.clipboard?.read) return [];
     const items = await navigator.clipboard.read();
     const files = [];
@@ -136,6 +135,8 @@ async function readClipboardFiles() {
     return files;
 }
 
+// === Core Logic (Functional) ===
+
 export function initFileHandler(root) {
     if (!root || INSTANCES.has(root)) return;
 
@@ -150,11 +151,12 @@ export function initFileHandler(root) {
     const fileList = root.querySelector('[data-fh-file-list]') || root.querySelector('#fh-file-list');
     const countEl = root.querySelector('[data-fh-count]') || root.querySelector('#fh-count');
     const totalSizeEl = root.querySelector('[data-fh-total-size]') || root.querySelector('#fh-total-size');
-    const resultsCard = root.querySelector('[data-fh-results]') || root.querySelector('#fh-results-card');
-    const resultsContent = root.querySelector('[data-fh-results-content]') || root.querySelector('#fh-results-content');
     const pasteBtn = root.querySelector('[data-fh-paste]');
 
-    if (!dropArea || !filesInput || !actionBar || !fileList || !countEl || !totalSizeEl || !uploadBtn || !clearBtn) return;
+    // Strict validation (returns if missing elements)
+    if (!dropArea || !filesInput || !actionBar || !fileList || !countEl || !totalSizeEl || !uploadBtn || !clearBtn) {
+        return;
+    }
 
     const state = { fileQueue: new Map() };
     INSTANCES.set(root, state);
@@ -242,25 +244,9 @@ export function initFileHandler(root) {
             const isDedup = item.status === 'deduplicated';
             resultEl.innerHTML = `
                 <span class="fh-status-icon ${isDedup ? 'fh-result-dedup' : 'fh-result-success'}">${isDedup ? STATUS_ICONS.dedup : STATUS_ICONS.success}</span>
-                <button type="button" class="fh-btn-view" title="Ver en navegador">${STATUS_ICONS.view}</button>
-                <button type="button" class="fh-btn-download" title="Descargar">${STATUS_ICONS.download}</button>
             `;
             resultEl.className = 'fh-file-result fh-file-actions-complete';
             removeBtn.style.display = 'none';
-
-            const viewBtn = resultEl.querySelector('.fh-btn-view');
-            const downloadBtn = resultEl.querySelector('.fh-btn-download');
-
-            viewBtn?.addEventListener('click', () => {
-                if (item.documentId) {
-                    window.open(`/api/files/documents/${item.documentId}/download?inline`, '_blank');
-                }
-            });
-            downloadBtn?.addEventListener('click', () => {
-                if (item.documentId) {
-                    window.location.href = `/api/files/documents/${item.documentId}/download`;
-                }
-            });
 
             if (!item.emitted) {
                 item.emitted = true;
@@ -274,7 +260,20 @@ export function initFileHandler(root) {
         }
     }
 
-    async function addFilesToQueue(files) {
+    function removeFile(id) {
+        const card = root.querySelector(`[data-fh-id="${id}"]`);
+        if (card) card.remove();
+        state.fileQueue.delete(id);
+        updateActionBar();
+    }
+
+    function clearQueue() {
+        state.fileQueue.clear();
+        fileList.innerHTML = '';
+        updateActionBar();
+    }
+
+    function addFilesToQueue(files) {
         for (const file of files) {
             const isDuplicate = Array.from(state.fileQueue.values()).some(
                 item => item.file.name === file.name && item.file.size === file.size
@@ -296,208 +295,85 @@ export function initFileHandler(root) {
             state.fileQueue.set(item.id, item);
             fileList.appendChild(createFileCard(item));
         }
-
         updateActionBar();
-
-        for (const item of state.fileQueue.values()) {
-            if (!item.hash && item.status === 'pending') {
-                item.status = 'hashing';
-                updateFileCard(item);
-                try {
-                    item.hash = await computeSHA256(item.file);
-                    item.status = 'pending';
-                } catch (err) {
-                    devlog('Error calculando hash:', err);
-                    item.status = 'error';
-                    item.errorMsg = 'Hash failed';
-                }
-                updateFileCard(item);
-            }
-        }
-    }
-
-    function removeFile(id) {
-        const card = root.querySelector(`[data-fh-id="${id}"]`);
-        if (card) {
-            card.classList.add('fh-removing');
-            setTimeout(() => card.remove(), 300);
-        }
-        state.fileQueue.delete(id);
-        updateActionBar();
-    }
-
-    function clearQueue() {
-        state.fileQueue.clear();
-        fileList.innerHTML = '';
-        filesInput.value = '';
-        directoryInput.value = '';
-        if (resultsCard) resultsCard.style.display = 'none';
-        updateActionBar();
-    }
-
-    async function checkDeduplication(item) {
-        item.status = 'checking';
-        updateFileCard(item);
-
-        try {
-            const res = await api.post('/files/check', {
-                hash: item.hash,
-                mime_type: item.file.type || 'application/octet-stream',
-                original_name: item.file.name
-            });
-            if (res?.d?.exists) {
-                item.deduplicated = true;
-                item.status = 'deduplicated';
-                item.progress = 100;
-                item.documentId = res.d.document_id;
-            } else {
-                item.status = 'pending';
-            }
-        } catch (err) {
-            devlog('Error checking dedup:', err);
-            item.status = 'pending';
-        }
-        updateFileCard(item);
-        return item.deduplicated;
-    }
-
-    async function uploadSimple(item) {
-        item.status = 'uploading';
-        item.progress = 10;
-        updateFileCard(item);
-
-        try {
-            const formData = new FormData();
-            formData.append('file', item.file);
-
-            item.progress = 50;
-            updateFileCard(item);
-
-            const res = await api.post('/files/upload-simple', formData);
-            if (res?.d?.success) {
-                item.status = 'completed';
-                item.progress = 100;
-                item.documentId = res.d.document_id;
-                item.deduplicated = res.d.deduplicated || false;
-                if (item.deduplicated) item.status = 'deduplicated';
-            } else {
-                throw new Error(res?.d?.message || 'Upload failed');
-            }
-        } catch (err) {
-            devlog('Error upload simple:', err);
-            item.status = 'error';
-            item.errorMsg = err.message || 'Upload failed';
-        }
-        updateFileCard(item);
-    }
-
-    async function uploadChunked(item) {
-        item.status = 'uploading';
-        item.progress = 0;
-        updateFileCard(item);
-
-        try {
-            const initRes = await api.post('/files/upload/init', {
-                hash: item.hash,
-                size_bytes: item.file.size,
-                original_name: item.file.name,
-                mime_type: item.file.type || 'application/octet-stream'
-            });
-
-            if (!initRes?.d?.success) {
-                if (initRes?.d?.exists) {
-                    item.status = 'deduplicated';
-                    item.deduplicated = true;
-                    item.progress = 100;
-                    item.documentId = initRes.d.document_id;
-                    updateFileCard(item);
-                    return;
-                }
-                throw new Error(initRes?.d?.message || 'Init failed');
-            }
-
-            const uploadId = initRes.d.upload_id;
-            const chunkSize = initRes.d.chunk_size;
-            const totalChunks = initRes.d.total_chunks;
-
-            for (let i = 0; i < totalChunks; i++) {
-                const start = i * chunkSize;
-                const end = Math.min(start + chunkSize, item.file.size);
-                const chunk = item.file.slice(start, end);
-                const chunkBuffer = await chunk.arrayBuffer();
-
-                const chunkRes = await fetch(`/api/files/upload/${uploadId}/chunk?chunk_index=${i}`, {
-                    method: 'PUT',
-                    body: chunkBuffer,
-                    headers: { 'Content-Type': 'application/octet-stream' }
-                });
-
-                if (!chunkRes.ok) throw new Error(`Chunk ${i} failed`);
-
-                item.progress = Math.round(((i + 1) / totalChunks) * 100);
-                updateFileCard(item);
-            }
-
-            const completeRes = await api.post(`/files/upload/${uploadId}/complete`, {});
-            if (completeRes?.d?.success) {
-                item.status = 'completed';
-                item.documentId = completeRes.d.document_id;
-            } else {
-                throw new Error(completeRes?.d?.message || 'Complete failed');
-            }
-        } catch (err) {
-            devlog('Error upload chunked:', err);
-            item.status = 'error';
-            item.errorMsg = err.message || 'Upload failed';
-        }
-        updateFileCard(item);
     }
 
     async function uploadAll() {
+        const pending = Array.from(state.fileQueue.values()).filter(item => item.status === 'pending' || item.status === 'error');
+        if (pending.length === 0) return;
+
         uploadBtn.disabled = true;
         uploadBtn.classList.add('loading');
 
-        const results = { uploaded: 0, deduplicated: 0, failed: 0 };
+        for (const item of pending) {
+            item.status = 'hashing';
+            updateFileCard(item);
 
-        for (const item of state.fileQueue.values()) {
-            if (item.status === 'completed' || item.status === 'deduplicated') {
-                results.deduplicated++;
-                continue;
+            try {
+                item.hash = await computeSHA256(item.file);
+                
+                item.status = 'checking';
+                updateFileCard(item);
+                
+                const checkRes = await api.post('/files/check.json', { hash: item.hash });
+                if (checkRes?.d?.exists) {
+                    item.status = 'deduplicated';
+                    item.documentId = checkRes.d.document_id;
+                    item.progress = 100;
+                    updateFileCard(item);
+                    continue;
+                }
+
+                item.status = 'uploading';
+                updateFileCard(item);
+
+                const formData = new FormData();
+                formData.append('file', item.file);
+                formData.append('hash', item.hash);
+                // Scope could be read from data-fh-scope if needed, defaulting to global for now
+                const scope = dropArea.dataset.fhScope || 'global';
+                formData.append('scope', scope);
+
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/api/files/upload.json');
+                    xhr.setRequestHeader('Authorization', `Bearer ${api.getToken()}`);
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            item.progress = Math.round((e.loaded / e.total) * 100);
+                            updateFileCard(item);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.data?.success) {
+                                item.status = 'completed';
+                                item.documentId = res.data.document_id;
+                                item.progress = 100;
+                                resolve();
+                            } else {
+                                reject(new Error(res.data?.message || 'Upload failed'));
+                            }
+                        } else {
+                            reject(new Error(`HTTP ${xhr.status}`));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Network error'));
+                    xhr.send(formData);
+                });
+
+                updateFileCard(item);
+
+            } catch (err) {
+                item.status = 'error';
+                item.errorMsg = err.message;
+                updateFileCard(item);
+                devlog('Upload error:', err);
             }
-
-            const isDup = await checkDeduplication(item);
-            if (isDup) {
-                results.deduplicated++;
-                continue;
-            }
-
-            if (item.file.size <= SIMPLE_UPLOAD_THRESHOLD) {
-                await uploadSimple(item);
-            } else {
-                await uploadChunked(item);
-            }
-
-            if (item.status === 'completed') results.uploaded++;
-            else if (item.status === 'deduplicated') results.deduplicated++;
-            else results.failed++;
-        }
-
-        if (resultsCard && resultsContent) {
-            resultsCard.style.display = 'block';
-            resultsContent.innerHTML = `
-                <div class="fh-result-item fh-result-uploaded">
-                    <span class="fh-result-value">${results.uploaded}</span>
-                    <span class="fh-result-label">Subidos</span>
-                </div>
-                <div class="fh-result-item fh-result-deduplicated">
-                    <span class="fh-result-value">${results.deduplicated}</span>
-                    <span class="fh-result-label">Deduplicados</span>
-                </div>
-                <div class="fh-result-item fh-result-failed">
-                    <span class="fh-result-value">${results.failed}</span>
-                    <span class="fh-result-label">Fallidos</span>
-                </div>
-            `;
         }
 
         const uploadedFiles = Array.from(state.fileQueue.values())
@@ -557,6 +433,76 @@ export function initFileHandler(root) {
         }
     });
 }
+
+// === Web Component ===
+
+class BnxFileHandler extends HTMLElement {
+    constructor() {
+        super();
+    }
+
+    static get observedAttributes() {
+        return ['scope'];
+    }
+
+    connectedCallback() {
+        this.render();
+        // Delegate logic to the robust function
+        initFileHandler(this);
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === 'scope') {
+            const dropArea = this.querySelector('.fh-drop-area');
+            if (dropArea) dropArea.dataset.fhScope = newValue;
+        }
+    }
+
+    render() {
+        const scope = this.getAttribute('scope') || 'global';
+        this.innerHTML = `
+            <div class="card fh-drop-card border border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
+                <div class="fh-drop-area" data-fh-scope="${scope}">
+                    <input type="file" multiple accept="*/*" class="fh-input-hidden hidden" data-fh-files>
+                    <input type="file" webkitdirectory directory multiple class="fh-input-hidden hidden" data-fh-directory>
+                    <div class="fh-drop-content flex flex-col items-center gap-2">
+                        <div class="fh-drop-icon text-indigo-400">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <h4 class="fh-drop-title text-xs font-medium text-slate-700">Arrastra archivos aquí</h4>
+                        <p class="fh-drop-subtitle text-[10px] text-slate-400">
+                            o <button type="button" class="text-indigo-600 hover:underline link" data-fh-browse-files>busca archivos</button> / 
+                            <button type="button" class="text-indigo-600 hover:underline link" data-fh-browse-folder>carpeta</button> / 
+                            <button type="button" class="text-indigo-600 hover:underline link" data-fh-paste>pegar</button>
+                        </p>
+                    </div>
+                    <div class="fh-paste-hint mt-2 text-[10px] text-gray-400 transition-opacity duration-200">
+                        <span class="bg-gray-100 border border-gray-200 rounded px-1 py-0.5 text-gray-500 font-mono">Ctrl</span> + 
+                        <span class="bg-gray-100 border border-gray-200 rounded px-1 py-0.5 text-gray-500 font-mono">V</span>
+                        para pegar
+                    </div>
+                </div>
+            </div>
+            <div class="fh-action-bar mt-2 flex justify-between items-center" data-fh-action style="display: none;">
+                <span class="fh-file-count text-[10px] text-slate-500">
+                    <strong data-fh-count>0</strong> en cola
+                    <span data-fh-total-size></span>
+                </span>
+                <div class="flex gap-2">
+                    <button type="button" class="text-[10px] text-red-500 hover:underline" data-fh-clear>Limpiar</button>
+                    <button type="button" class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] hover:bg-indigo-700" data-fh-upload>Subir</button>
+                </div>
+            </div>
+            <div class="fh-file-list mt-2 space-y-1" data-fh-file-list></div>
+        `;
+    }
+}
+
+customElements.define('bnx-file-handler', BnxFileHandler);
 
 export function initFileHandlers(container) {
     if (!container) return;
