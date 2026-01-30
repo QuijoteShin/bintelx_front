@@ -1,4 +1,4 @@
-// src/bnx/components/FileHandler.js
+// src/bnx/components/file-handler/FileHandler.js
 import './file-handler.css';
 import { api } from '@bnx/api.js';
 import { devlog } from '@bnx/utils.js';
