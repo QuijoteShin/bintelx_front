@@ -1,5 +1,5 @@
 // src/bnx/auth.js
-import { config } from '../config.js';
+import { config } from '@config';
 import { api } from './api.js';
 import { devlog } from "./utils.js";
 import { loadContentIntoElement  } from './loader.js';

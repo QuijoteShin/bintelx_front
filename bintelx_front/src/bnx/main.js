@@ -1,4 +1,4 @@
-import { config } from '../config.js';
+import { config } from '@config';
 import { initRouter } from './router.js';
 import { loadComponent } from './loader.js';
 import '../assets/css/global.css'; // Import global CSS

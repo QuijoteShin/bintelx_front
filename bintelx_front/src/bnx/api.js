@@ -11,7 +11,7 @@
 // Ej: Backend retorna {success: true, data: {user: ...}}
 //     Frontend recibe response.d = {user: ...} (sin el wrapper)
 // Si NO hay .data, response.d es el objeto completo.
-import { config } from '../config.js';
+import { config } from '@config';
 import {devlog} from "./utils";
 const MODE_IN = __MODE_IN__;
 let mockApiHandler = null;

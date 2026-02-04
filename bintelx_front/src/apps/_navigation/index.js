@@ -1,8 +1,8 @@
-import { api } from '../../bnx/api.js';
-import { renderTemplate, devlog } from '../../bnx/utils.js';
+import { api } from '@bnx/api.js';
+import { renderTemplate, devlog } from '@bnx/utils.js';
 import navRoutes from './routes.json';
-import { localRoutesHint } from '../../bnx/router.js';
-import { renderChips } from '../../bnx/components/chips.js';
+import { localRoutesHint } from '@bnx/router.js';
+import { renderChips } from '@bnx/components/chips.js';
 import './index.css';
 
 export default async function(container) {

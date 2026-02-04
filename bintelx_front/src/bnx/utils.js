@@ -1,6 +1,6 @@
 // src/bnx/utils.js
 
-import { config } from '../config.js';
+import { config } from '@config';
 const MODE_IN = __MODE_IN__;
 
 /**

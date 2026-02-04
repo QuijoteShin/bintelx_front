@@ -1,6 +1,6 @@
 // src/bnx/router.js
 import { renderTemplate, devlog } from './utils.js';
-import { config } from '../config.js';
+import { config } from '@config';
 import { authFlow } from "./auth.js"; // Import the simplified authFlow
 import { api } from './api.js';
 

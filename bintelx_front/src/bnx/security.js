@@ -1,5 +1,5 @@
 // src/bnx/security.js
-import { config } from '../config.js';
+import { config } from '@config';
 import {devlog} from "./utils";
 
 let devToolsDetected = false;

@@ -1,7 +1,7 @@
 // src/apps/_profile/index.js
-import { api } from '../../bnx/api.js';
-import { devlog } from '../../bnx/utils.js';
-import { authFlow } from '../../bnx/auth.js';
+import { api } from '@bnx/api.js';
+import { devlog } from '@bnx/utils.js';
+import { authFlow } from '@bnx/auth.js';
 import './index.css';
 
 let cachedProfile = null;

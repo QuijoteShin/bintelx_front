@@ -162,6 +162,7 @@ module.exports = (envArgs, argv) => {
       alias: {
         '@bnx': path.resolve(__dirname, 'src/bnx'),
         '@apps': path.resolve(__dirname, 'src/apps'),
+        '@config': path.resolve(__dirname, 'src/config.js'),
       },
     },
     optimization: {

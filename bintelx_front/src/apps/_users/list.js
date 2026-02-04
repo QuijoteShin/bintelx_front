@@ -1,7 +1,7 @@
 // src/apps/users/list.js
 
-import { api } from '../../bnx/api.js';
-import { renderTemplate, devlog } from '../../bnx/utils.js';
+import { api } from '@bnx/api.js';
+import { renderTemplate, devlog } from '@bnx/utils.js';
 import './list.css';
 
 const loadingTemplate = `<p>Loading users...</p>`;
