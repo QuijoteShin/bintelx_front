@@ -1,10 +1,9 @@
-// src/apps/layout/navigation/index.js
+// src/apps/layout/index.js
 import { api } from '@bnx/api.js';
 import { devlog } from '@bnx/utils.js';
 import { authFlow } from '@bnx/auth.js';
 import { localRoutesHint } from '@bnx/router.js';
 import '@bnx/components/notifications/BnxNotifications.js';
-import './index.css';
 
 const AVATAR_PATTERNS = [
   '',                  // Default (soft radial)
