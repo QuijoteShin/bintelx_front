@@ -54,19 +54,19 @@ export const helpers = templateHelpers;
  * Renders a template string with the provided data and helper functions.
  * @param {string} templateString - The raw template string (from a .tpls file).
  * @param {object} data - The data to inject into the template.
+ * @param {Array<string>} [safeKeys=[]] - Keys that contain safe HTML and should NOT be sanitized.
  * @returns {string} The rendered HTML string.
  */
-export function renderTemplate(templateString, data = {}) {
+export function renderTemplate(templateString, data = {}, safeKeys = []) {
   // Sanitize all string values in the data object before rendering
   const sanitizedData = {};
   for (const key in data) {
-    if (typeof data[key] === 'string') {
+    if (typeof data[key] === 'string' && !safeKeys.includes(key)) {
       sanitizedData[key] = sanitize(data[key]);
     } else {
       sanitizedData[key] = data[key];
     }
   }
-
   // Create a context that includes both the data and our helper functions
   const context = { ...sanitizedData, h: templateHelpers };
 

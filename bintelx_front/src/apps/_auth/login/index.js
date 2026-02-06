@@ -1,7 +1,7 @@
 // bnx/apps/_auth/login/index.js
 import { devlog } from '@bnx/utils.js';
 import { authFlow } from '@bnx/auth.js';
-import { config } from '../../../config.js';
+import { config } from '@config';
 import { loadContentIntoElement } from '@bnx/loader.js';
 
 export default function(container, data) {

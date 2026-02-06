@@ -170,6 +170,33 @@
     color: var(--color-primary-700);
 }
 
+.scope-item-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    flex-shrink: 0;
+}
+
+.scope-item-settings {
+    color: var(--color-text-tertiary);
+    padding: var(--spacing-2);
+    border-radius: var(--radius-md);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.scope-item-settings:hover {
+    color: var(--color-primary-600);
+    background: var(--color-primary-100);
+}
+
+.scope-item:hover .scope-item-settings {
+    opacity: 1;
+    transform: scale(1);
+}
+
 .scope-item-arrow {
     color: var(--color-text-tertiary);
     flex-shrink: 0;

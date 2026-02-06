@@ -38,33 +38,70 @@ export default async function(container, data) {
     }
 
     function renderScopes(scopes) {
-        const icon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        const companyIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M3 21h18M5 21V7l8-4 8 4v14M9 21v-6h6v6M9 9h.01M15 9h.01M9 13h.01M15 13h.01"/>
+        </svg>`;
+
+        const personalIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
         </svg>`;
 
         const arrow = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
             <polyline points="9 18 15 12 9 6"/>
         </svg>`;
 
+        const cogIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>`;
+
         scopeList.innerHTML = scopes.map(scope => {
             const isCurrent = currentScopeId && scope.id === currentScopeId;
+            const isPersonal = scope.is_personal === true;
+            const icon = isPersonal ? personalIcon : companyIcon;
+            const label = isPersonal ? 'Área Personal' : escapeHtml(scope.name);
+            const sublabel = isPersonal ? escapeHtml(scope.name) : `ID: ${scope.id}`;
+
+            // Cog only for non-personal workspaces
+            const settingsBtn = !isPersonal ? `
+                <button class="scope-item-settings" data-scope-id="${scope.id}" title="Configuración">
+                    ${cogIcon}
+                </button>` : '';
+
             return `
-            <article class="scope-item ${isCurrent ? 'is-current' : ''}" data-scope-id="${scope.id}">
+            <article class="scope-item ${isCurrent ? 'is-current' : ''} ${isPersonal ? 'is-personal' : ''}" data-scope-id="${scope.id}">
                 <div class="scope-item-icon">${icon}</div>
                 <div class="scope-item-info">
-                    <h3 class="scope-item-name">${escapeHtml(scope.name)}</h3>
+                    <h3 class="scope-item-name">${label}</h3>
                     <div class="scope-item-meta">
-                        <span>ID: ${scope.id}</span>
+                        <span>${sublabel}</span>
                         ${isCurrent ? '<span class="scope-item-badge">Actual</span>' : ''}
                     </div>
                 </div>
-                <div class="scope-item-arrow">${arrow}</div>
+                <div class="scope-item-actions">
+                    ${settingsBtn}
+                    <div class="scope-item-arrow">${arrow}</div>
+                </div>
             </article>`;
         }).join('');
 
         // Add click handlers
         scopeList.querySelectorAll('.scope-item').forEach(item => {
-            item.addEventListener('click', () => selectScope(item));
+            item.addEventListener('click', (e) => {
+                // Don't select scope if clicking settings button
+                if (e.target.closest('.scope-item-settings')) return;
+                selectScope(item);
+            });
+        });
+
+        // Settings button handlers
+        scopeList.querySelectorAll('.scope-item-settings').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const scopeId = btn.dataset.scopeId;
+                navigate(`/workspace/settings?scope=${scopeId}`);
+            });
         });
     }
 

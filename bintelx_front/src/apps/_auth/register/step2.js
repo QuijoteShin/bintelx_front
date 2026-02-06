@@ -1,6 +1,6 @@
 // /src/apps/_auth/register/step2.js
 import { api } from '@bnx/api.js';
-import { config } from '../../../config.js';
+import { config } from '@config';
 
 export default function(stepElement, data) {
   const { stepData, updateStepDataCallback } = data;
