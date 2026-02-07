@@ -525,7 +525,7 @@ class BnxFileHandler extends HTMLElement {
                     <button type="button" class="px-2 py-1 bg-indigo-600 text-white rounded text-[10px] hover:bg-indigo-700" data-fh-upload>Subir</button>
                 </div>
             </div>
-            <div class="fh-file-list mt-2 space-y-1" data-fh-file-list></div>
+            <div class="fh-file-list mt-2 space-y-1 overflow-y-auto custom-scroll" data-fh-file-list style="max-height: 22.1vh;"></div>
         `;
     }
 }
