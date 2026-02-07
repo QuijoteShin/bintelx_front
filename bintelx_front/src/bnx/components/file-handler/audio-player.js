@@ -91,7 +91,7 @@ export function bindAudioPlayer(player) {
     });
 
     seekbar.addEventListener('click', (e) => {
-        if (!audio.duration) return;
+        if (!audio.duration || !isFinite(audio.duration)) return;
         const rect = seekbar.getBoundingClientRect();
         const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         audio.currentTime = pct * audio.duration;
