@@ -315,7 +315,7 @@ export function initFileHandler(root) {
                 item.status = 'checking';
                 updateFileCard(item);
                 
-                const checkRes = await api.post('/files/check.json', { hash: item.hash });
+                const checkRes = await api.post('/files/check', { hash: item.hash });
                 if (checkRes?.d?.exists) {
                     item.status = 'deduplicated';
                     item.documentId = checkRes.d.document_id;
@@ -336,8 +336,8 @@ export function initFileHandler(root) {
 
                 await new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/api/files/upload.json');
-                    xhr.setRequestHeader('Authorization', `Bearer ${api.getToken()}`);
+                    xhr.open('POST', '/api/files/upload-simple');
+                    xhr.withCredentials = true;
 
                     xhr.upload.onprogress = (e) => {
                         if (e.lengthComputable) {
@@ -432,6 +432,20 @@ export function initFileHandler(root) {
             devlog('Clipboard read failed:', err);
         }
     });
+
+    return {
+        hasPendingFiles: () => Array.from(state.fileQueue.values()).some(
+            item => item.status === 'pending' || item.status === 'error'
+        ),
+        hasFiles: () => state.fileQueue.size > 0,
+        getCompletedFiles: () => Array.from(state.fileQueue.values())
+            .filter(item => item.documentId)
+            .map(item => serializeItem(item)),
+        getQueueSize: () => state.fileQueue.size,
+        uploadAll: () => uploadAll(),
+        clearQueue: () => clearQueue(),
+        addFiles: (files) => addFilesToQueue(files)
+    };
 }
 
 // === Web Component ===
@@ -447,8 +461,22 @@ class BnxFileHandler extends HTMLElement {
 
     connectedCallback() {
         this.render();
-        // Delegate logic to the robust function
-        initFileHandler(this);
+        this.api = initFileHandler(this);
+    }
+
+    uploadAndWait() {
+        if (!this.api) return Promise.resolve([]);
+        if (!this.api.hasPendingFiles()) {
+            return Promise.resolve(this.api.getCompletedFiles());
+        }
+        return new Promise((resolve) => {
+            const handler = (e) => {
+                this.removeEventListener('filehandler-upload-complete', handler);
+                resolve(e.detail.files || []);
+            };
+            this.addEventListener('filehandler-upload-complete', handler);
+            this.api.uploadAll();
+        });
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
