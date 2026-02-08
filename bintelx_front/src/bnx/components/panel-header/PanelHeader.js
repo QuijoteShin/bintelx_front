@@ -76,7 +76,15 @@ class BnxPanelHeader extends HTMLElement {
                     display: flex;
                     align-items: center;
                     gap: var(--spacing-4, 1rem);
+                    flex-shrink: 0;
+                    min-width: 0;
+                }
+
+                .panel-center {
                     flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                     min-width: 0;
                 }
 
@@ -180,6 +188,10 @@ class BnxPanelHeader extends HTMLElement {
                     <div class="panel-content">
                         <slot name="content"></slot>
                     </div>
+                </div>
+
+                <div class="panel-center">
+                    <slot name="center"></slot>
                 </div>
 
                 <div class="panel-right">
