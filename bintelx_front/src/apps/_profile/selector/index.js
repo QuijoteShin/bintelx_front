@@ -1,12 +1,14 @@
 // src/apps/_profile/selector/index.js
-import { api } from '@bnx/api.js';
-import { devlog } from '@bnx/utils.js';
-import { navigate } from '@bnx/router.js';
-import { authFlow } from '@bnx/auth.js';
+import { api } from '../../../bnx/api.js';
+import { devlog } from '../../../bnx/utils.js';
+import { navigate } from '../../../bnx/router.js';
+import { authFlow } from '../../../bnx/auth.js';
 
 export default async function(container, data) {
     const scopeList = container.querySelector('#scopeList');
     const footer = container.querySelector('#selectorFooter');
+
+    const btnWorkspaceSettings = container.querySelector('#btnWorkspaceSettings');
 
     // Get current scope from data or try to detect it
     const currentScopeId = data?.currentScopeId || null;
@@ -51,10 +53,11 @@ export default async function(container, data) {
             <polyline points="9 18 15 12 9 6"/>
         </svg>`;
 
-        const cogIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>`;
+        // Show workspace settings button if current scope is non-personal
+        const currentScope = scopes.find(s => currentScopeId && s.id === currentScopeId);
+        if (btnWorkspaceSettings && currentScope && !currentScope.is_personal) {
+            btnWorkspaceSettings.hidden = false;
+        }
 
         scopeList.innerHTML = scopes.map(scope => {
             const isCurrent = currentScopeId && scope.id === currentScopeId;
@@ -62,12 +65,6 @@ export default async function(container, data) {
             const icon = isPersonal ? personalIcon : companyIcon;
             const label = isPersonal ? 'Área Personal' : escapeHtml(scope.name);
             const sublabel = isPersonal ? escapeHtml(scope.name) : `ID: ${scope.id}`;
-
-            // Cog only for non-personal workspaces
-            const settingsBtn = !isPersonal ? `
-                <button class="scope-item-settings" data-scope-id="${scope.id}" title="Configuración">
-                    ${cogIcon}
-                </button>` : '';
 
             return `
             <article class="scope-item ${isCurrent ? 'is-current' : ''} ${isPersonal ? 'is-personal' : ''}" data-scope-id="${scope.id}">
@@ -80,7 +77,6 @@ export default async function(container, data) {
                     </div>
                 </div>
                 <div class="scope-item-actions">
-                    ${settingsBtn}
                     <div class="scope-item-arrow">${arrow}</div>
                 </div>
             </article>`;
@@ -88,20 +84,7 @@ export default async function(container, data) {
 
         // Add click handlers
         scopeList.querySelectorAll('.scope-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                // Don't select scope if clicking settings button
-                if (e.target.closest('.scope-item-settings')) return;
-                selectScope(item);
-            });
-        });
-
-        // Settings button handlers
-        scopeList.querySelectorAll('.scope-item-settings').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const scopeId = btn.dataset.scopeId;
-                navigate(`/workspace/settings?scope=${scopeId}`);
-            });
+            item.addEventListener('click', () => selectScope(item));
         });
     }
 
