@@ -25,6 +25,7 @@ bnx-notifications {
     white-space: nowrap;
     text-align: right;
     margin-right: 0;
+    cursor: pointer;
 }
 
 .bnx-ticker.is-active {
@@ -296,11 +297,35 @@ class BnxNotifications extends HTMLElement {
             e.stopPropagation();
             this.clear();
         });
+
+        // Ticker click → navigate to notification path
+        this._refs.ticker.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const path = this._refs.ticker.dataset.path;
+            if (path && path !== window.location.pathname + window.location.search) {
+                history.pushState({}, '', path);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+        });
+
+        // List item click → navigate to notification path (delegated)
+        this._refs.list.addEventListener('click', (e) => {
+            const item = e.target.closest('.bnx-notification-item');
+            if (!item) return;
+            const idx = [...this._refs.list.children].indexOf(item);
+            const n = this._notifications[idx];
+            if (n?.path && n.path !== window.location.pathname + window.location.search) {
+                this._closeDropdown();
+                history.pushState({}, '', n.path);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+            }
+        });
     }
 
     notify(type = 'info', title, body) {
         const id = Date.now();
-        const notification = { id, type, title, body, time: new Date() };
+        const path = window.location.pathname + window.location.search;
+        const notification = { id, type, title, body, time: new Date(), path };
         this._notifications.unshift(notification);
         
         this._showTicker(notification);
@@ -338,8 +363,9 @@ class BnxNotifications extends HTMLElement {
     _showTicker(n) {
         this._refs.tickerTitle.textContent = n.title;
         this._refs.tickerBody.textContent = n.body;
+        this._refs.ticker.dataset.path = n.path || '';
         this._refs.ticker.classList.remove('is-active');
-        void this._refs.ticker.offsetWidth; // Force reflow
+        void this._refs.ticker.offsetWidth;
         this._refs.ticker.classList.add('is-active');
     }
 
