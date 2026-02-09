@@ -316,7 +316,7 @@ export function initFileHandler(root) {
                 updateFileCard(item);
                 
                 const checkRes = await api.post('/files/check', { hash: item.hash });
-                if (checkRes?.d?.exists) {
+                if (checkRes?.d?.exists && checkRes.d.document_id) {
                     item.status = 'deduplicated';
                     item.documentId = checkRes.d.document_id;
                     item.progress = 100;
