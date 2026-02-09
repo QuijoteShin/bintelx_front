@@ -1,9 +1,10 @@
-// src/apps/layout/index.js
+// src/apps/layout/navigation/index.js
 import { api } from '@bnx/api.js';
 import { devlog } from '@bnx/utils.js';
 import { authFlow } from '@bnx/auth.js';
 import { localRoutesHint } from '@bnx/router.js';
-import '@bnx/components/notifications/BnxNotifications.js';
+import '../../../bnx/components/notifications/BnxNotifications.js';
+import './index.css';
 
 const AVATAR_PATTERNS = [
   '',                  // Default (soft radial)
@@ -47,6 +48,7 @@ export default async function(container) {
   const profileScopeRole = container.querySelector('#profile-scope-role');
   const profileDropdown = container.querySelector('#profile-dropdown');
   const profileSwitchScope = container.querySelector('#profile-switch-scope');
+  const profileWorkspaceSettings = container.querySelector('#profile-workspace-settings');
   const profileLogout = container.querySelector('#profile-logout');
   let cachedRoles = [];
   let cachedUnconfigured = [];
@@ -89,6 +91,12 @@ export default async function(container) {
       } else {
         profileScopeRole.textContent = '';
       }
+    }
+
+    // Show workspace settings link only for non-personal scopes
+    if (profileWorkspaceSettings) {
+      profileWorkspaceSettings.hidden = is_own_scope;
+      profileWorkspaceSettings.href = '/workspace/settings';
     }
   }
 
