@@ -202,7 +202,13 @@ async function requestToken(username, password) {
     devlog(`Requesting token for user: ${username}`);
 
     try {
-        const response = await api.post(config.AUTH_LOGIN_ENDPOINT, { username, password });
+        // Obtener device fingerprint (best-effort, no bloquea login si falla)
+        const device_hash = await api.fingerprint().catch(() => null);
+
+        const payload = { username, password };
+        if (device_hash) payload.device_hash = device_hash;
+
+        const response = await api.post(config.AUTH_LOGIN_ENDPOINT, payload);
 
         // Accept 2xx status codes (200-299)
         if (response && response.status >= 200 && response.status < 300 && response.d && response.d.token) {
