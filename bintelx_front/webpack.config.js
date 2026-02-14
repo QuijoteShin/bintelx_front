@@ -110,6 +110,9 @@ module.exports = (envArgs, argv) => {
       allowedHosts: [
         `.${env.APP_HOST}`
       ],
+      client: {
+        webSocketURL: `wss://${env.APP_HOST}/ws`,
+      },
       open: {
         context: ['/'],
         target: env.APP_OPEN_URL,
