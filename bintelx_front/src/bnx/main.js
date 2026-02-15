@@ -28,7 +28,7 @@ async function startApp() {
                     url: config.ws?.baseUrl || opts.url,
                     token: opts.token,
                     autoSubscribe: opts.autoSubscribe || [],
-                    handshakeRoute: opts.handshakeRoute || '/api/_demo/validate'
+                    handshakeRoute: opts.handshakeRoute || config.AUTH_TOKEN_VALIDATE_ENDPOINT
                 });
             } catch (err) {
                 devlog('Error instanciando BintelxClient', 'error');
