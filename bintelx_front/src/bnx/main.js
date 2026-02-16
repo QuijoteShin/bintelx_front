@@ -1,15 +1,16 @@
+// src/bnx/main.js
 import { config } from '@config';
 import { initRouter } from './router.js';
 import { loadComponent } from './loader.js';
-import '../assets/css/global.css'; // Import global CSS
+import { api } from './api.js';
+import '../assets/css/global.css';
 import { devlog } from './utils.js';
 
 document.title = config.appName;
-// Initialize the application router
+
 async function startApp() {
     console.log('Starting Bintelx Frontend Application...');
-    // document.title = config.appName;
-    // Load persistent layout components into their slots
+
     try {
         await Promise.all([
             loadComponent('layout/navigation', '#pre-app'),
@@ -20,27 +21,10 @@ async function startApp() {
         console.error('A critical error occurred while loading layout components.', error);
     }
 
-    // Si BintelxClient está disponible globalmente, exponer un helper en window
-    if (typeof window !== 'undefined' && window.BintelxClient) {
-        window.getBintelxClient = (opts = {}) => {
-            try {
-                return new window.BintelxClient({
-                    url: config.ws?.baseUrl || opts.url,
-                    token: opts.token,
-                    autoSubscribe: opts.autoSubscribe || [],
-                    handshakeRoute: opts.handshakeRoute || config.AUTH_TOKEN_VALIDATE_ENDPOINT
-                });
-            } catch (err) {
-                devlog('Error instanciando BintelxClient', 'error');
-                devlog(err, 'error');
-                return null;
-            }
-        };
-    }
+    // WS transport — reemplaza BintelxClient
+    api.connect();
 
-    // Initialize the main router after the static layout is in place
     initRouter();
 }
 
-// Start the application once the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', startApp);

@@ -56,7 +56,7 @@ async function handleSuccessfulLogin(token) {
 
         // 2. Check if user has multiple scopes
         try {
-            const scopesRes = await api.get('/profile/scopes.json');
+            const scopesRes = await api.get('/profile/scopes.json', { persist: true });
             devlog('Scopes check:', scopesRes);
 
             if (scopesRes?.d?.success && scopesRes.d.scopes?.length > 1) {
@@ -154,7 +154,7 @@ function startSessionMonitor() {
 async function validateTokenAPI(token) {
     if (!token) return false;
     try {
-        const response = await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token });
+        const response = await api.post(config.AUTH_TOKEN_VALIDATE_ENDPOINT, { token }, { persist: true });
         // Accept 2xx status codes (200-299)
         return !!(response && response.status >= 200 && response.status < 300 && response.d && response.d.success); // true|false
     } catch (error) {
@@ -208,7 +208,7 @@ async function requestToken(username, password) {
         const payload = { username, password };
         if (device_hash) payload.device_hash = device_hash;
 
-        const response = await api.post(config.AUTH_LOGIN_ENDPOINT, payload);
+        const response = await api.post(config.AUTH_LOGIN_ENDPOINT, payload, { persist: true });
 
         // Accept 2xx status codes (200-299)
         if (response && response.status >= 200 && response.status < 300 && response.d && response.d.token) {

@@ -100,6 +100,9 @@ function findMatchingRoute(currentPath) {
  * Main function to handle route changes.
  */
 async function handleRouteChange() {
+  // Cancelar requests de la vista anterior (HTTP + WS view-scoped)
+  api.abortViewRequests();
+
   devlog(`--- Handling route change for: ${window.location.pathname} ---`);
   // Call the main auth function. It will handle showing the overlay if needed.
   const isAuthenticated = await authFlow.validate();
@@ -115,7 +118,7 @@ async function handleRouteChange() {
   // Load user roles and routes (once per session)
   if (!cachedRoles) {
     try {
-      const profile = await api.get('/profile');
+      const profile = await api.get('/profile', { persist: true });
       const data = profile?.d?.data || profile?.d || profile;
       cachedRoles = data.roles || [];
     } catch (error) {
@@ -220,7 +223,7 @@ async function loadRoutesFromEndpoint(userRoles = []) {
   }
   try {
     // Send local/static routes so backend knows what's available; action=fetch (read-only)
-    const res = await api.post(endpoint, { action: 'fetch', local_routes: staticRoutes });
+    const res = await api.post(endpoint, { action: 'fetch', local_routes: staticRoutes }, { persist: true });
     const payload = res?.d || {};
     const remoteRoutes = payload.routes || [];
     const configured = payload.configured ?? false;

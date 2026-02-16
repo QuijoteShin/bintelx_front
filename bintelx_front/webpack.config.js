@@ -135,6 +135,8 @@ module.exports = (envArgs, argv) => {
         __AUTH_VALIDATE_ENDPOINT__: JSON.stringify(env.AUTH_VALIDATE_ENDPOINT),
         __AUTH_REPORT_ENDPOINT__: JSON.stringify(env.AUTH_REPORT_ENDPOINT),
         __WS_BASE_URL__: JSON.stringify(env.WS_BASE_URL || ''),
+        __WS_API_TIMEOUT__: JSON.stringify(parseInt(env.WS_API_TIMEOUT) || 5000),
+        __WS_FIRST__: JSON.stringify(env.WS_FIRST !== 'false'),
         __NAV_ENDPOINT__: JSON.stringify(env.NAV_ENDPOINT || ''),
         __ALLOW_CONVENTION_ROUTES__: JSON.stringify(env.ALLOW_CONVENTION_ROUTES !== 'false'),
       }),

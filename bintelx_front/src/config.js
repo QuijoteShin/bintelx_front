@@ -16,7 +16,9 @@ export const config = {
                 return `${proto}//${window.location.host}/ws/`;
             }
             return '';
-        })()
+        })(),
+        apiTimeout: __WS_API_TIMEOUT__ || 5000,
+        first: __WS_FIRST__ !== false
     },
     navEndpoint: __NAV_ENDPOINT__,
     allowConventionRoutes: __ALLOW_CONVENTION_ROUTES__,
