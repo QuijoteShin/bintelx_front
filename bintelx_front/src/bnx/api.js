@@ -21,9 +21,16 @@
 //   Layer 6 (auto):    Circuit breaker — abre tras 5 fallos consecutivos por host
 //   Layer 7 (opt-in):  Priority — { priority: 'low' } posterga al idle
 //
+// Capas (todas las methods):
+//   Layer 8 (auto):    Navigation lifecycle — requests mueren al cambiar de ruta
+//                      { persist: true } para sobrevivir (auth, profile, routes)
+//                      api.abortViewRequests() cancela HTTP + WS view-scoped
+//
 // Transporte:
-//   WS_FIRST=true  → frame WS (Swoole channel server), HTTP fallback on timeout
+//   WS_FIRST=true  → frame WS (Swoole channel server), HTTP fallback on timeout/error
 //   WS_FIRST=false → siempre HTTP, WS solo para push/subscribe
+//   Throttle:        >3 WS pending → nuevos requests van por HTTP (evita head-of-line)
+//   SWR:             revalidaciones background siempre por HTTP (no satura WS)
 //
 // Absorbe BintelxClient: auth, heartbeat, reconnect, subscribe, events, fingerprint
 
@@ -59,6 +66,16 @@ const _abortControllers = new Map(); // abortKey → AbortController
 // Almacena etag+data por URL. Si backend envía ETag header, el próximo
 // request envía If-None-Match. En 304 retorna data cacheada sin consumir body.
 const _etagStore = new Map();     // url → { etag, data }
+
+// Props custom de api.js que NO deben llegar a fetch() nativo
+const _customProps = ['cache', 'abortKey', 'skipDedup', 'retry', 'priority', 'persist', 'query'];
+function _stripCustomProps(options) {
+    const clean = {};
+    for (const k in options) {
+        if (!_customProps.includes(k)) clean[k] = options[k];
+    }
+    return clean;
+}
 
 // ─── Layer 5: Retry config ─────────────────────────────────────────
 const RETRY_MAX = 2;
@@ -739,10 +756,9 @@ async function request(endpoint, options = {}) {
     }
 
     // ─── Transport ─────────────────────────────────────────────
-    // Separar props de api.js (cache, abortKey, etc.) de las de fetch() nativo
-    // fetch() rechaza props desconocidas (ej: cache:60000 vs RequestCache enum)
-    const { cache: _c, abortKey: _a, skipDedup: _s, retry: _r, priority: _p, persist: _pe, query, ...fetchOptions } = options;
-    fetchOptions.query = query; // query se usa en WS transport, no en fetch()
+    // fetch() rechaza props custom (ej: cache:60000 vs RequestCache enum)
+    const fetchOptions = _stripCustomProps(options);
+    fetchOptions.query = options.query; // query se usa en WS transport, no en fetch()
     // hasUserSignal (no hasSignal): viewAc.signal no debe forzar HTTP, WS se cancela via _viewWsIds
     const promise = _transport(endpoint, url, fetchOptions, method, viewScoped, hasUserSignal);
 
@@ -788,7 +804,8 @@ function _revalidateInBackground(endpoint, url, options, method, cacheKey) {
     const revalKey = `_reval:${cacheKey}`;
     if (_inflight.has(revalKey)) return;
 
-    const promise = _httpWithRetry(url, { ...options, skipDedup: true }, endpoint)
+    // SWR va directo a HTTP (sin pasar por request()), limpiar props custom
+    const promise = _httpWithRetry(url, { ..._stripCustomProps(options), skipDedup: true }, endpoint)
         .then(res => {
             if (options.cache) {
                 const ttl = typeof options.cache === 'number' ? options.cache : 30000;
