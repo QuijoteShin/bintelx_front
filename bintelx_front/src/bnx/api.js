@@ -342,7 +342,9 @@ function _handleWsMessage(event) {
             const err = new Error(payload.message || 'WS API error');
             // status 400 evita que retry/circuit-breaker insistan sobre WS roto
             const httpStatus = payload.http_status || 400;
-            err.response = { d: payload.data || {}, status: httpStatus, headers: {} };
+            // Unwrap error: misma lógica que _httpFetch error path — si cambia uno, cambiar el otro
+            const errData = payload.data || {};
+            err.response = { d: errData.data !== undefined ? errData.data : errData, status: httpStatus, headers: {} };
             err.status = httpStatus;
             err._wsError = true; // marca para que _transport no haga fallback HTTP
             pending.reject(err);
@@ -757,7 +759,7 @@ async function request(endpoint, options = {}) {
         _viewAbortControllers.add(viewAc);
         // Encadenar: si abortKey ya creó un signal, propagarlo al viewAc
         if (options.signal) {
-            options.signal.addEventListener('abort', () => viewAc.abort());
+            options.signal.addEventListener('abort', () => viewAc.abort(), { once: true });
         }
         options = { ...options, signal: viewAc.signal };
     }
@@ -766,6 +768,7 @@ async function request(endpoint, options = {}) {
     // fetch() rechaza props custom (ej: cache:60000 vs RequestCache enum)
     const fetchOptions = _stripCustomProps(options);
     fetchOptions.query = options.query; // query se usa en WS transport, no en fetch()
+    if (options.retry === false) fetchOptions.retry = false; // preservar retry:false para _httpWithRetry
     // hasUserSignal (no hasSignal): viewAc.signal no debe forzar HTTP, WS se cancela via _viewWsIds
     const promise = _transport(endpoint, url, fetchOptions, method, viewScoped, hasUserSignal);
 
@@ -781,7 +784,9 @@ async function request(endpoint, options = {}) {
     // Track inflight for GET
     if (method === 'GET' && !options.skipDedup) {
         const tracked = promise.then(res => {
-            _inflight.delete(cacheKey);
+            // Identity check: solo borrar si esta promise sigue siendo la registrada
+            // (abortViewRequests puede haber limpiado _inflight y una nueva vista re-registrado)
+            if (_inflight.get(cacheKey) === tracked) _inflight.delete(cacheKey);
             // Cache si opt-in
             if (options.cache) {
                 const ttl = typeof options.cache === 'number' ? options.cache : 30000;
@@ -794,7 +799,7 @@ async function request(endpoint, options = {}) {
             }
             return res;
         }).catch(err => {
-            _inflight.delete(cacheKey);
+            if (_inflight.get(cacheKey) === tracked) _inflight.delete(cacheKey);
             throw err;
         });
         _inflight.set(cacheKey, tracked);
@@ -1048,6 +1053,8 @@ export const api = {
     disconnect: (code = 1000, reason = 'client closed') => {
         if (_wsReconnectTimer) { clearTimeout(_wsReconnectTimer); _wsReconnectTimer = null; }
         _stopHeartbeat();
+        // Rechazar pending WS antes de cerrar (onclose = null impide que _rejectAllPending corra)
+        _rejectAllPending('client disconnected');
         if (_ws) {
             _ws.onclose = null;
             _ws.close(code, reason);
