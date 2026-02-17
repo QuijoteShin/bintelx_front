@@ -123,7 +123,7 @@ export default async function(container) {
     devlog('Profile section setup complete - checking scopes async...');
 
     // Check if user has multiple scopes - ASYNC, runs after listeners are attached
-    api.get('/profile/scopes.json').then(scopesRes => {
+    api.get('/profile/scopes.json', { persist: true }).then(scopesRes => {
       if (scopesRes?.d?.success && scopesRes.d.scopes?.length > 1) {
         hasMultipleScopes = true;
         if (profileSwitchScope) {
@@ -247,7 +247,7 @@ export default async function(container) {
         prefix: route.prefix || null,
         required_roles: route.required_roles || []
       };
-      await api.post('/navigation', { action: 'save', routes: [payloadRoute] });
+      await api.post('/navigation', { action: 'save', routes: [payloadRoute] }, { persist: true });
       // Saca la ruta de la lista local y fuerza recarga de navegación
       cachedUnconfigured = cachedUnconfigured.filter(r => r.path !== route.path);
       renderUnconfigured(cachedUnconfigured, cachedRoles.includes('system.admin'));
@@ -259,7 +259,7 @@ export default async function(container) {
 
   async function reloadNavigation() {
     try {
-      const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
+      const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint }, { persist: true });
       const payload = res?.d || {};
       const routes = payload.routes || [];
       cachedRoles = payload.roles || cachedRoles;
@@ -270,7 +270,8 @@ export default async function(container) {
   }
 
   try {
-    const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint });
+    // persist:true — layout sobrevive a abortViewRequests() durante navegación SPA
+    const res = await api.post('/navigation', { action: 'fetch', local_routes: localRoutesHint }, { persist: true });
     const payload = res?.d || {};
     const routes = payload.routes || [];
     const configured = payload.configured ?? false;
