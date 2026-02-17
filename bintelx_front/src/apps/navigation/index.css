@@ -1,0 +1,419 @@
+/* src/apps/layout/navigation/index.css */
+.bx-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #0f172a;
+  color: #fff;
+}
+
+/* ========================================
+   PROFILE AVATAR - Generative CSS Patterns
+   ======================================== */
+.profile-avatar {
+  --avatar-size: 32px;
+  --avatar-hue: 220;
+  --avatar-sat: 65%;
+
+  --c-light: hsl(var(--avatar-hue) var(--avatar-sat) 75%);
+  --c-main:  hsl(var(--avatar-hue) var(--avatar-sat) 60%);
+  --c-dark:  hsl(var(--avatar-hue) var(--avatar-sat) 45%);
+  --c-accent: hsl(calc(var(--avatar-hue) + 30) var(--avatar-sat) 55%);
+
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.3),
+    inset 0 -2px 4px rgba(0,0,0,0.1),
+    0 2px 5px rgba(0,0,0,0.1);
+
+  border: 1px solid rgba(255,255,255,0.1);
+  background-color: var(--c-main);
+
+  /* Default pattern: Soft Radial */
+  background:
+    radial-gradient(circle at 30% 30%, var(--c-light), transparent 60%),
+    radial-gradient(circle at 70% 70%, var(--c-dark), transparent 60%),
+    var(--c-main);
+}
+
+.profile-avatar-initial {
+  font-size: calc(var(--avatar-size) * 0.45);
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  z-index: 2;
+  user-select: none;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Pattern: Checker (Ajedrez) */
+.profile-avatar.pattern-checker {
+  background-color: var(--c-main);
+  background-image:
+    conic-gradient(
+      var(--c-light) 90deg,
+      transparent 90deg 180deg,
+      var(--c-light) 180deg 270deg,
+      transparent 270deg
+    );
+  background-size: 34% 34%;
+  background-position: center;
+}
+
+/* Pattern: Sunburst (Rayos) */
+.profile-avatar.pattern-sunburst {
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--c-main) 0deg 20deg,
+    var(--c-dark) 20deg 40deg
+  );
+}
+
+/* Pattern: Bauhaus (Geométrico) */
+.profile-avatar.pattern-bauhaus {
+  background:
+    radial-gradient(circle at 80% 20%, var(--c-light) 25%, transparent 26%),
+    radial-gradient(circle at 20% 80%, var(--c-dark) 35%, transparent 36%),
+    linear-gradient(135deg, var(--c-accent) 0%, transparent 100%),
+    var(--c-main);
+}
+
+/* Pattern: ZigZag */
+.profile-avatar.pattern-zigzag {
+  background-color: var(--c-main);
+  background-image:
+    linear-gradient(135deg, var(--c-dark) 25%, transparent 25%),
+    linear-gradient(225deg, var(--c-dark) 25%, transparent 25%),
+    linear-gradient(45deg, var(--c-dark) 25%, transparent 25%),
+    linear-gradient(315deg, var(--c-dark) 25%, transparent 25%);
+  background-position: 10px 0, 10px 0, 0 0, 0 0;
+  background-size: 20px 20px;
+  background-repeat: repeat;
+}
+
+/* Pattern: Rings (Topográfico) */
+.profile-avatar.pattern-rings {
+  background: repeating-radial-gradient(
+    circle at 0 0,
+    var(--c-main) 0,
+    var(--c-main) 10px,
+    var(--c-dark) 11px,
+    var(--c-dark) 12px
+  );
+}
+
+/* Pattern: Diagonal (Rayas) */
+.profile-avatar.pattern-diagonal {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--c-main),
+    var(--c-main) 10px,
+    var(--c-light) 10px,
+    var(--c-light) 20px
+  );
+}
+
+/* Pattern: Dots (Lunares) */
+.profile-avatar.pattern-dots {
+  background-color: var(--c-main);
+  background-image: radial-gradient(var(--c-light) 2px, transparent 2px);
+  background-size: 12px 12px;
+}
+
+/* Sizes */
+.profile-avatar.size-xs { --avatar-size: 24px; }
+.profile-avatar.size-sm { --avatar-size: 32px; }
+.profile-avatar.size-md { --avatar-size: 48px; }
+.profile-avatar.size-lg { --avatar-size: 64px; }
+.profile-avatar.size-xl { --avatar-size: 96px; }
+
+/* Profile section in header */
+.bx-nav__profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bx-nav__profile:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__scope-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 150px;
+}
+
+.bx-nav__scope-name {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bx-nav__scope-role {
+  font-size: 0.65rem;
+  color: #64748b;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bx-nav__scope-role:empty {
+  display: none;
+}
+
+/* Profile chevron */
+.bx-nav__profile-chevron {
+  color: #64748b;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.bx-nav__profile:hover .bx-nav__profile-chevron {
+  color: #94a3b8;
+}
+
+.bx-nav__profile.is-open .bx-nav__profile-chevron {
+  transform: rotate(180deg);
+}
+
+/* Profile dropdown */
+.bx-nav__profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  min-width: 200px;
+  padding: 8px 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  z-index: 100;
+}
+
+.bx-nav__profile.is-open .bx-nav__profile-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bx-nav__profile-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  color: #cbd5e1;
+  text-decoration: none;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bx-nav__profile-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__profile-item svg {
+  color: #64748b;
+}
+
+.bx-nav__profile-item:hover svg {
+  color: #94a3b8;
+}
+.bx-nav__brand {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.bx-nav__list {
+  list-style: none;
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Actions container (Notifications + Profile) */
+.bx-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto; /* Push to right */
+}
+
+.bx-nav__item a {
+  color: #e2e8f0;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.bx-nav__item a:hover {
+  background: rgba(255,255,255,0.1);
+}
+.bx-nav__item--empty {
+  color: #94a3b8;
+}
+
+/* Submenu support (CSS-only dropdown) */
+.bx-nav__item--has-submenu {
+  position: relative;
+}
+
+.bx-nav__parent {
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+}
+
+.bx-nav__item--has-submenu:hover .bx-nav__parent,
+.bx-nav__item--has-submenu.is-active .bx-nav__parent {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  min-width: 200px;
+
+  /* Hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+/* Show on hover (CSS puro) */
+.bx-nav__item--has-submenu:hover .bx-nav__submenu,
+.bx-nav__item--has-submenu:focus-within .bx-nav__submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bx-nav__submenu-item {
+  padding: 0;
+}
+
+.bx-nav__submenu-item a {
+  display: block;
+  padding: 8px 16px;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-radius: 0;
+}
+
+.bx-nav__submenu-item a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.bx-nav__submenu-item.is-active a {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+/* Active parent highlight */
+  .bx-nav__item.is-active .bx-nav__parent {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+  }
+
+  /* Unconfigured routes panel */
+  .bx-nav-unconfigured {
+    margin: 12px 20px;
+    padding: 12px;
+    background: #0b1222;
+    border: 1px solid #1f2937;
+    border-radius: 10px;
+    color: #e2e8f0;
+  }
+  .bx-nav-unconfigured__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .bx-nav-unconfigured__subtitle {
+    margin: 2px 0 0 0;
+    color: #94a3b8;
+    font-size: 0.9rem;
+  }
+  .bx-nav-unconfigured__badge {
+    background: #1d4ed8;
+    color: #e2e8f0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .bx-nav-unconfigured__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .bx-nav-unconfigured__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    background: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+  }
+  .bx-nav-unconfigured__path {
+    font-family: monospace;
+    color: #cbd5e1;
+    word-break: break-all;
+  }
+  .bx-nav-unconfigured__add {
+    background: #22c55e;
+    border: none;
+    color: #0b1222;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .bx-nav-unconfigured__add:hover {
+    background: #16a34a;
+  }
