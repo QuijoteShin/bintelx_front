@@ -68,6 +68,7 @@ const _abortControllers = new Map(); // abortKey → AbortController
 const _etagStore = new Map();     // url → { etag, data }
 
 // Props custom de api.js que NO deben llegar a fetch() nativo
+// Fuente única: usado en request() y _revalidateInBackground(). Agregar aquí al crear props nuevas
 const _customProps = ['cache', 'abortKey', 'skipDedup', 'retry', 'priority', 'persist', 'query'];
 function _stripCustomProps(options) {
     const clean = {};
@@ -220,12 +221,14 @@ function _scheduleReconnect() {
     }, _wsBackoff);
 }
 
+// Llamado en onclose — rechaza todos los WS pending y limpia lifecycle tracking
 function _rejectAllPending(reason) {
     for (const [id, pending] of _wsPending) {
         if (pending.timer) clearTimeout(pending.timer);
         pending.reject(new Error(reason));
     }
     _wsPending.clear();
+    _viewWsIds.clear();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -235,7 +238,7 @@ function _rejectAllPending(reason) {
 async function _authenticate() {
     const token = _getToken();
 
-    // Fingerprint: obtener hash server-side (best-effort, cachea resultado)
+    // Fingerprint: obtener hash via WS durante auth. Comparte _fpCache con api.fingerprint() (HTTP)
     if (!_serverFingerprint && !_fpFailed) {
         try {
             // Reutilizar componentes si ya se calcularon (heavy: Canvas, WebGL, fonts)
@@ -332,6 +335,7 @@ function _handleWsMessage(event) {
     if (payload.correlation_id && _wsPending.has(payload.correlation_id)) {
         const pending = _wsPending.get(payload.correlation_id);
         _wsPending.delete(payload.correlation_id);
+        _viewWsIds.delete(payload.correlation_id); // cleanup lifecycle tracking
         if (pending.timer) clearTimeout(pending.timer);
 
         if (payload.type === 'api_error' || payload.status === 'error') {
@@ -340,10 +344,10 @@ function _handleWsMessage(event) {
             const httpStatus = payload.http_status || 400;
             err.response = { d: payload.data || {}, status: httpStatus, headers: {} };
             err.status = httpStatus;
-            err._wsError = true;
+            err._wsError = true; // marca para que _transport no haga fallback HTTP
             pending.reject(err);
         } else {
-            // Unwrap: misma lógica que HTTP
+            // Unwrap: misma lógica que _httpFetch — si cambia uno, cambiar el otro
             const raw = payload.data || {};
             const unwrapped = raw.data !== undefined ? raw.data : raw;
             pending.resolve({
@@ -461,6 +465,7 @@ function _isCircuitOpen(endpoint) {
     return true;
 }
 
+// Llamado en _transport (WS ok) y _httpWithRetry (HTTP ok/fail)
 function _circuitRecord(endpoint, success) {
     const key = _circuitKey(endpoint);
     if (success) {
@@ -530,6 +535,7 @@ async function _httpFetch(url, options, endpoint) {
 
         if (!response.ok) {
             const error = new Error(data.message || `HTTP error! Status: ${response.status}`);
+            // Unwrap: misma lógica que _handleWsMessage — si cambia uno, cambiar el otro
             error.response = {
                 d: data.data !== undefined ? data.data : data,
                 status: response.status,
@@ -539,6 +545,7 @@ async function _httpFetch(url, options, endpoint) {
             throw error;
         }
 
+        // Unwrap: misma lógica que _handleWsMessage — si cambia uno, cambiar el otro
         const result = {
             d: data.data !== undefined ? data.data : data,
             status: response.status,
@@ -1111,9 +1118,8 @@ export const api = {
     },
 
     /**
-     * Obtiene el device fingerprint (xxh128, 32 hex) del servidor.
-     * Recolecta componentes del dispositivo y los envía a /profile/fingerprint.
-     * Cacheado por sesión — mismo dispositivo = mismo hash.
+     * Obtiene el device fingerprint (xxh128) via HTTP. Comparte _fpCache con _authenticate() (WS).
+     * _authenticate setea _fpCache al conectar WS, este método es fallback para login sin WS.
      * @returns {Promise<string|null>} xxh128 hash o null si falla
      */
     fingerprint: async () => {
